@@ -1,0 +1,17 @@
+{
+  "name": "chronoshard",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Chronoshard: Thirteen Chimes, a time-travel pixel RPG",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "typecheck": "tsc --noEmit",
+    "serve": "python3 -m http.server 8642",
+    "start": "npm run build && npm run serve"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
+}
