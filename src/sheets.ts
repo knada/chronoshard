@@ -16,9 +16,9 @@ export interface Sheet { name: string; id: string; frames: SheetFrame[]; names: 
 interface SheetAsset { entry: ManifestEntry; url: string; requested?: boolean; sheet?: Sheet }
 
 /** dialogue speaker names that don't match a sheet's name exactly */
-const SPEAKER_ALIAS: Record<string, string> = { Kid: 'Ashvale Kid', Child: 'Elderwood Child' };
+export const SPEAKER_ALIAS: Record<string, string> = { Kid: 'Ashvale Kid', Child: 'Elderwood Child' };
 /** NPCs who use a party member's sheet before they join */
-const NPC_ALIAS: Record<string, string> = { lyraNpc: 'lyra' };
+export const NPC_ALIAS: Record<string, string> = { lyraNpc: 'lyra' };
 /** how tall Kael's standing frame is drawn, in art pixels; every character shares the same scale */
 const HERO_HEIGHT = 36;
 /** a frame's size in original pixels (manifest frameSize) */

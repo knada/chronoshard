@@ -155,9 +155,9 @@ export const Sound = {
   // tiny looping chiptune: track = {tempo, lead:[midi|0...], bass:[...]}
   play(track: Track | null): void {
     if (this.track === track) return;
-    this.track = track; this.step = 0; clearInterval(this.musicTimer);
+    this.track = track; this.step = 0; window.clearInterval(this.musicTimer);
     if (!track) return;
-    this.musicTimer = setInterval(() => {
+    this.musicTimer = window.setInterval(() => {
       if (!this.ac || !this.musicOn || !this.track) return;
       const t = this.track, i = this.step++;
       const n = t.lead[i % t.lead.length], b = t.bass[i % t.bass.length];

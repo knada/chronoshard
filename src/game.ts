@@ -1,5 +1,5 @@
 import { Frame, H, Input, Sound, TILE, TOPX, UX, VH, VW, W, ctx, fillScreen, snapPx } from './engine.js';
-import { Cam } from './diorama.js';
+import { Cam } from './camera.js';
 import { Space } from './space.js';
 import type { Vec3 } from './space.js';
 import { PAL, blit, cursor, gridSprite, mkCanvas, pixShadow, px, text, uiWindow, wrapText } from './pixel.js';

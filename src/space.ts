@@ -5,7 +5,7 @@
 // recorded for the 3D scene goes through these helpers, so the renderer only ever sees world positions.
 import { Frame, S, UX } from './engine.js';
 import type { Vec3 } from './engine.js';
-import { Cam, HS } from './diorama.js';
+import { Cam, HS } from './camera.js';
 
 export type { Vec3 };
 
