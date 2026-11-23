@@ -1,3 +1,5 @@
+// the in-game font (Jersey 20, OFL), bundled by Vite so it loads with the game
+import '@fontsource/jersey-20/latin-400.css';
 import { Frame, H, Input, SW, Sound, UX, beginScreen, blitWorld, ctx, fillScreen, rng, toScreen, toWorld } from './engine.js';
 import { World3D } from './world3d.js';
 import { Sheets } from './sheets.js';

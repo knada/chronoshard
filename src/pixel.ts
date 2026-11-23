@@ -168,13 +168,16 @@ export const FONT_HEX =
 export const FONT_EXTRA: Record<string, number[]> = { '→': [0x08, 0x08, 0x2a, 0x1c, 0x08], '▼': [0x04, 0x0c, 0x1c, 0x0c, 0x04], '★': [0x24, 0x1c, 0x0e, 0x1c, 0x24], '·': [0, 0, 0x08, 0, 0], '▶': [0x3e, 0x1c, 0x08, 0, 0], '’': [0, 0x05, 0x03, 0, 0], '—': [8, 8, 8, 8, 8] };
 export const Font = {
   atlas: null as HTMLCanvasElement | null, idx: {} as Record<string, number>, tinted: new Map<string, HTMLCanvasElement>(),
-  /** true: smooth high-resolution serif drawn at the UI layer's full resolution; false: the 5x7 bitmap font */
-  hd: true, family: '"Palatino", "Palatino Linotype", "Book Antiqua", "Iowan Old Style", Georgia, serif',
+  /** true: Jersey 20 drawn at the UI layer's full resolution; false: the 5x7 bitmap font */
+  hd: true, family: '"Jersey 20", "Trebuchet MS", sans-serif', // symbols it lacks (→ ▼ ▶ ★) come from the fallbacks
 };
-// the HD font is sized so its capitals match the bitmap glyphs' 7-pixel height at the same scale
-const hdPx = (size: number) => fontScale(size) * 10;
-const hdFont = (size: number) => `600 ${hdPx(size)}px ${Font.family}`;
+/** Jersey 20 is sized so its capitals stand as tall as the bitmap glyphs' 7 pixels at the same scale */
+const HD_EM = 12; // its capitals are 0.59 em
+const hdPx = (size: number) => fontScale(size) * HD_EM;
+const hdFont = (size: number) => `${hdPx(size)}px ${Font.family}`;
 const MEASURE = document.createElement('canvas').getContext('2d')!, MCACHE = new Map<string, number>();
+// text measured before the font arrived used the fallback's widths
+void document.fonts?.load(`20px "Jersey 20"`).then(() => MCACHE.clear());
 (function buildFont() {
   const glyphs: number[][] = [];
   for (let i = 0; i < 95; i++) glyphs.push([0, 1, 2, 3, 4].map(k => parseInt(FONT_HEX.substr(i * 10 + k * 2, 2), 16)));
