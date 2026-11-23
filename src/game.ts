@@ -328,7 +328,7 @@ export const Game = {
   },
   drawFieldHud() {
     if (G.banner) { const a = Math.min(1, G.banner.t); ctx.globalAlpha = a; uiWindow(280, 30, 400, 80); text(G.banner.era, 480, 46, '#ffe050', 12, 'center'); text(G.banner.name, 480, 72, '#fff', 18, 'center'); ctx.globalAlpha = 1; }
-    if (!G.script) text('Z: talk/check   C: menu', 950 + UX, 700, 'rgba(255,255,255,0.55)', 10, 'right'); // right edge of the screen
+    if (!G.script) text(`${Input.label('ok')}: talk/check   ${Input.label('menu')}: menu`, 950 + UX, 700, 'rgba(255,255,255,0.55)', 10, 'right'); // right edge of the screen
     if (!G.script) this.drawPartyHud();
   },
   /** the player's middle in UI coordinates (projected through the 3D camera in the diorama) */
@@ -412,7 +412,7 @@ export const Game = {
       if (!keys.length) text('No items.', 60, 130, '#a0a8d0', 16);
       keys.forEach((k, i) => { text(ITEMS[k].name, 80, 130 + i * 40, '#fff', 16); text('x' + G.inv[k], 460, 130 + i * 40, '#fff', 16, 'right'); if (m.focus === 'items' && i === m.idx && !m.sub) cursor(50, 132 + i * 40, G.t); });
       if (m.focus === 'items' && keys[m.idx]) text(ITEMS[keys[m.idx]].desc, 60, 580, '#c0c8f0', 12);
-      if (!m.focus) text('Press Z to use an item.', 60, 580, '#a0a8d0', 12);
+      if (!m.focus) text(`Press ${Input.label('ok')} to use an item.`, 60, 580, '#a0a8d0', 12);
       // party HP/MP stays beside the list, so you can see who needs a Tonic or Ether before picking one;
       // once an item is chosen it becomes the target picker
       uiWindow(520, 120, 400, 48 + G.party.length * 64);

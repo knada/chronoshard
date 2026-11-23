@@ -517,7 +517,7 @@ export const Battle = {
     const self = this;
     this.co = (function* () { for (const a of self.heroes) a.dir = 'down'; yield 0.6; })();
   },
-  lose() { this.phase = 'lose'; this.menu = null; this.result = ['The party has fallen...', 'Press Z to rise again from your last save.']; Sound.play(null); Sound.sfx('die'); },
+  lose() { this.phase = 'lose'; this.menu = null; this.result = ['The party has fallen...', `Press ${Input.label('ok')} to rise again from your last save.`]; Sound.play(null); Sound.sfx('die'); },
   finish() {
     this.active = false;
     if (this.phase === 'lose') { Game.gameOver(); return; }
@@ -606,7 +606,7 @@ export const Battle = {
         const o = this.mainOptions();
         o.forEach((s, i) => text(s, 60, 560 + i * 36, '#fff', 18));
         cursor(30, 562 + m.idx * 36, t);
-        if (this.ready.length > 1) text('X: switch', 180, 680, '#a0a8d0', 10);
+        if (this.ready.length > 1) text(`${Input.label('back')}: switch`, 180, 680, '#a0a8d0', 10);
       } else {
         const isTech = mode === 'tech';
         const rows: { label: string; right: string; color: string; rightColor: string; desc: string }[] = isTech
@@ -627,7 +627,7 @@ export const Battle = {
         });
         const c = rows[sel];
         if (c) wrapText(c.desc, 270, 11).slice(0, 3).forEach((ln, j) => text(ln, 30, 560 + j * 20, '#c0c8f0', 11));
-        text('Z: use  X: back', 30, 680, '#a0a8d0', 10);
+        text(`${Input.label('ok')}: use  ${Input.label('back')}: back`, 30, 680, '#a0a8d0', 10);
       }
       if (m.level === 'target' && m.pending) {
         const p = m.pending, tg = p.target, list = this.targetList(tg), cur = list[m.tIdx];

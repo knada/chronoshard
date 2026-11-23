@@ -7,6 +7,7 @@ import { cursor, px, text, uiWindow } from './pixel.js';
 import { drawHero } from './sprites.js';
 import { Atmos } from './atmos.js';
 import { HEROES, MAPS } from './data.js';
+import type { Action } from './engine.js';
 import { Battle, heroStats } from './battle.js';
 import { G, Game, worldCam } from './game.js';
 import type { HeroId } from './types.js';
@@ -52,7 +53,9 @@ export function drawTitle() {
   cursor(360, 562 + Title.idx * 40, t);
   // the save's party stays in view; dimmed unless Continue (which loads it) is selected
   if (opts.includes('Continue')) { ctx.globalAlpha = opts[Title.idx] === 'Continue' ? 1 : 0.55; drawSaveSummary(); ctx.globalAlpha = 1; }
-  text('Arrows/WASD move · Z/Enter confirm · X/Esc back · C menu', 480, 690, '#6a6a90', 10, 'center');
+  const L = (a: Action) => Input.label(a);
+  text(Input.device === 'pad' ? `D-pad/stick move · ${L('ok')} confirm · ${L('back')} back · ${L('menu')} menu` : 'Arrows/WASD move · Z/Enter confirm · X/Esc back · C menu',
+    480, 690, '#6a6a90', 10, 'center');
 }
 
 /** what Continue will load: where, gold, and each hero's level, HP and MP */
@@ -101,7 +104,7 @@ export function drawEnding() {
   // once the credits have rolled by, the party's final HP/MP fades in beneath them
   const rest = t - ENDING.length * 2.2;
   if (rest > 0) { ctx.globalAlpha = Math.min(1, rest); Game.drawPartyPanel(180, 542, 600, 200, 410); ctx.globalAlpha = 1; }
-  if (t > ENDING.length * 2.2 + 6 && (G.t * 2 | 0) % 2) text('Press Z', 480, 698, '#a0a8d0', 12, 'center');
+  if (t > ENDING.length * 2.2 + 6 && (G.t * 2 | 0) % 2) text(`Press ${Input.label('ok')}`, 480, 698, '#a0a8d0', 12, 'center');
 }
 
 // ---------- main loop ----------
@@ -111,6 +114,7 @@ void Sheets.load(); // the drawn sprite sheets stream in; generated sprites stan
 export let lastTime = performance.now();
 export function loop(now: number): void {
   const dt = Math.min(0.05, (now - lastTime) / 1000); lastTime = now; G.t += dt;
+  Input.pollPads();
 
   // fades
   if (G.fadeTo > 0) { G.fade = Math.min(1, G.fade + dt * 3.5); if (G.fade >= 1) { G.fadeTo = 0; const f = G.onFade; G.onFade = null; if (f) f(); } }

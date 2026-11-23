@@ -9,6 +9,7 @@ vi.hoisted(() => {
 });
 
 const { loop } = await import('../src/main.js');
+const { Input } = await import('../src/engine.js');
 const { G, Game, SAVE_KEY } = await import('../src/game.js');
 const { Battle } = await import('../src/battle.js');
 
@@ -69,4 +70,25 @@ test('a short playthrough', () => {
   until('continuing loads the save', () => G.mode === 'field' && G.fade === 0, 300);
   expect([G.map.id, Math.round(G.player.x / 16), Math.round(G.player.y / 16)]).toEqual([saved.map, saved.x, saved.y]);
   expect(G.gold).toBe(50); // the save was made before the fight
+});
+
+test('a controller can play too', () => {
+  let held: number[] = [];
+  Object.defineProperty(navigator, 'getGamepads', { configurable: true, value: () => [{
+    id: 'Xbox Wireless Controller (STANDARD GAMEPAD Vendor: 045e Product: 0b13)', connected: true, mapping: 'standard', axes: [0, 0, 0, 0],
+    buttons: Array.from({ length: 17 }, (_, i) => ({ pressed: held.includes(i), touched: false, value: held.includes(i) ? 1 : 0 })) }] });
+  /** taps a controller button: held for a frame, then let go */
+  const button = (i: number) => { held = [i]; frames(); held = []; frames(); };
+
+  // the title screen, with A
+  G.mode = 'title'; frames();
+  button(0);
+  until('A starts the game', () => G.mode === 'field' && G.fade === 0);
+  until('A reads through the dialogue', () => !G.script, 400, () => button(0));
+  // Start opens the menu, B closes it
+  button(9);
+  expect(G.mode).toBe('menu');
+  button(1);
+  expect(G.mode).toBe('field');
+  expect(Input.label('ok'), 'hints now show controller buttons').toBe('A');
 });
