@@ -1,0 +1,1732 @@
+{
+  "game": "Chronoshard: Thirteen Chimes",
+  "frameSize": {
+    "width": 384,
+    "height": 384
+  },
+  "frameOrder": "Left to right, then top to bottom. Pivots are measured from the top-left of each frame.",
+  "collections": {
+    "characters": [
+      {
+        "name": "Kael",
+        "file": "characters/kael.webp",
+        "columns": 3,
+        "rows": 5,
+        "pivot": {
+          "x": 192,
+          "y": 362
+        },
+        "frames": [
+          "front-idle",
+          "front-step-a",
+          "front-step-b",
+          "back-idle",
+          "back-step-a",
+          "back-step-b",
+          "battle-ready",
+          "sword-attack",
+          "victory",
+          "right-idle",
+          "right-step-a",
+          "right-step-b",
+          "left-idle",
+          "left-step-a",
+          "left-step-b"
+        ],
+        "generatedFrom": "kael",
+        "gameId": "kael",
+        "sideMovementGeneratedFrom": "kael-side-movement",
+        "scale": 1
+      },
+      {
+        "name": "Bram",
+        "file": "characters/bram.webp",
+        "columns": 3,
+        "rows": 5,
+        "pivot": {
+          "x": 192,
+          "y": 362
+        },
+        "frames": [
+          "front-idle",
+          "front-step-a",
+          "front-step-b",
+          "back-idle",
+          "back-step-a",
+          "back-step-b",
+          "battle-ready",
+          "wrench-attack",
+          "victory",
+          "right-idle",
+          "right-step-a",
+          "right-step-b",
+          "left-idle",
+          "left-step-a",
+          "left-step-b"
+        ],
+        "generatedFrom": "bram",
+        "gameId": "bram",
+        "sideMovementGeneratedFrom": "bram-side-movement",
+        "scale": 1
+      },
+      {
+        "name": "Lyra",
+        "file": "characters/lyra.webp",
+        "columns": 3,
+        "rows": 5,
+        "pivot": {
+          "x": 192,
+          "y": 362
+        },
+        "frames": [
+          "front-idle",
+          "front-step-a",
+          "front-step-b",
+          "back-idle",
+          "back-step-a",
+          "back-step-b",
+          "battle-ready",
+          "staff-cast",
+          "victory",
+          "right-idle",
+          "right-step-a",
+          "right-step-b",
+          "left-idle",
+          "left-step-a",
+          "left-step-b"
+        ],
+        "generatedFrom": "lyra",
+        "gameId": "lyra",
+        "sideMovementGeneratedFrom": "lyra-side-movement",
+        "scale": 1
+      },
+      {
+        "name": "Mom",
+        "file": "characters/mom.webp",
+        "columns": 3,
+        "rows": 3,
+        "pivot": {
+          "x": 192,
+          "y": 362
+        },
+        "frames": [
+          "idle",
+          "walk",
+          "talk",
+          "right-idle",
+          "right-step-a",
+          "right-step-b",
+          "left-idle",
+          "left-step-a",
+          "left-step-b"
+        ],
+        "generatedFrom": "ashvale-family",
+        "gameId": "mom",
+        "sideMovementGeneratedFrom": "ashvale-households-side-movement",
+        "scale": 1
+      },
+      {
+        "name": "Innkeeper",
+        "file": "characters/innkeeper.webp",
+        "columns": 3,
+        "rows": 3,
+        "pivot": {
+          "x": 192,
+          "y": 362
+        },
+        "frames": [
+          "idle",
+          "walk",
+          "talk",
+          "right-idle",
+          "right-step-a",
+          "right-step-b",
+          "left-idle",
+          "left-step-a",
+          "left-step-b"
+        ],
+        "generatedFrom": "ashvale-family",
+        "gameId": "innkeep",
+        "sideMovementGeneratedFrom": "ashvale-households-side-movement",
+        "scale": 1
+      },
+      {
+        "name": "Ashvale Kid",
+        "file": "characters/ashvale-kid.webp",
+        "columns": 3,
+        "rows": 3,
+        "pivot": {
+          "x": 192,
+          "y": 362
+        },
+        "frames": [
+          "idle",
+          "walk",
+          "talk",
+          "right-idle",
+          "right-step-a",
+          "right-step-b",
+          "left-idle",
+          "left-step-a",
+          "left-step-b"
+        ],
+        "generatedFrom": "ashvale-family",
+        "gameId": "kid1",
+        "sideMovementGeneratedFrom": "ashvale-kid-side-movement",
+        "scale": 1
+      },
+      {
+        "name": "General Store Merchant",
+        "file": "characters/general-store-merchant.webp",
+        "columns": 3,
+        "rows": 3,
+        "pivot": {
+          "x": 192,
+          "y": 362
+        },
+        "frames": [
+          "idle",
+          "walk",
+          "talk",
+          "right-idle",
+          "right-step-a",
+          "right-step-b",
+          "left-idle",
+          "left-step-a",
+          "left-step-b"
+        ],
+        "generatedFrom": "ashvale-townsfolk",
+        "gameId": "shop1",
+        "sideMovementGeneratedFrom": "merchant-and-fenn-side-movement",
+        "scale": 1
+      },
+      {
+        "name": "Old Fenn",
+        "file": "characters/old-fenn.webp",
+        "columns": 3,
+        "rows": 3,
+        "pivot": {
+          "x": 192,
+          "y": 362
+        },
+        "frames": [
+          "idle",
+          "walk",
+          "talk",
+          "right-idle",
+          "right-step-a",
+          "right-step-b",
+          "left-idle",
+          "left-step-a",
+          "left-step-b"
+        ],
+        "generatedFrom": "ashvale-townsfolk",
+        "gameId": "old1",
+        "sideMovementGeneratedFrom": "merchant-and-fenn-side-movement",
+        "scale": 1
+      },
+      {
+        "name": "Watchman",
+        "file": "characters/watchman.webp",
+        "columns": 3,
+        "rows": 3,
+        "pivot": {
+          "x": 192,
+          "y": 362
+        },
+        "frames": [
+          "idle",
+          "walk",
+          "talk",
+          "right-idle",
+          "right-step-a",
+          "right-step-b",
+          "left-idle",
+          "left-step-a",
+          "left-step-b"
+        ],
+        "generatedFrom": "ashvale-townsfolk",
+        "gameId": "guard",
+        "sideMovementGeneratedFrom": "watchman-and-moira-side-movement",
+        "scale": 1
+      },
+      {
+        "name": "Elder Moira",
+        "file": "characters/elder-moira.webp",
+        "columns": 3,
+        "rows": 3,
+        "pivot": {
+          "x": 192,
+          "y": 362
+        },
+        "frames": [
+          "idle",
+          "walk",
+          "talk",
+          "right-idle",
+          "right-step-a",
+          "right-step-b",
+          "left-idle",
+          "left-step-a",
+          "left-step-b"
+        ],
+        "generatedFrom": "elderwood-keepers",
+        "gameId": "elder",
+        "sideMovementGeneratedFrom": "watchman-and-moira-side-movement",
+        "scale": 1
+      },
+      {
+        "name": "Hearthkeeper",
+        "file": "characters/hearthkeeper.webp",
+        "columns": 3,
+        "rows": 3,
+        "pivot": {
+          "x": 192,
+          "y": 362
+        },
+        "frames": [
+          "idle",
+          "walk",
+          "talk",
+          "right-idle",
+          "right-step-a",
+          "right-step-b",
+          "left-idle",
+          "left-step-a",
+          "left-step-b"
+        ],
+        "generatedFrom": "elderwood-keepers",
+        "gameId": "innP",
+        "sideMovementGeneratedFrom": "hearthkeeper-and-herbalist-side-movement",
+        "scale": 1
+      },
+      {
+        "name": "Herbalist",
+        "file": "characters/herbalist.webp",
+        "columns": 3,
+        "rows": 3,
+        "pivot": {
+          "x": 192,
+          "y": 362
+        },
+        "frames": [
+          "idle",
+          "walk",
+          "talk",
+          "right-idle",
+          "right-step-a",
+          "right-step-b",
+          "left-idle",
+          "left-step-a",
+          "left-step-b"
+        ],
+        "generatedFrom": "elderwood-keepers",
+        "gameId": "shopP",
+        "sideMovementGeneratedFrom": "hearthkeeper-and-herbalist-side-movement",
+        "scale": 1
+      },
+      {
+        "name": "Elderwood Child",
+        "file": "characters/elderwood-child.webp",
+        "columns": 3,
+        "rows": 3,
+        "pivot": {
+          "x": 192,
+          "y": 362
+        },
+        "frames": [
+          "idle",
+          "walk",
+          "talk",
+          "right-idle",
+          "right-step-a",
+          "right-step-b",
+          "left-idle",
+          "left-step-a",
+          "left-step-b"
+        ],
+        "generatedFrom": "elderwood-and-ruins",
+        "gameId": "vkid",
+        "sideMovementGeneratedFrom": "elderwood-child-side-movement",
+        "scale": 1
+      },
+      {
+        "name": "Woodcutter",
+        "file": "characters/woodcutter.webp",
+        "columns": 3,
+        "rows": 3,
+        "pivot": {
+          "x": 192,
+          "y": 362
+        },
+        "frames": [
+          "idle",
+          "walk",
+          "talk",
+          "right-idle",
+          "right-step-a",
+          "right-step-b",
+          "left-idle",
+          "left-step-a",
+          "left-step-b"
+        ],
+        "generatedFrom": "elderwood-and-ruins",
+        "gameId": "vman",
+        "sideMovementGeneratedFrom": "woodcutter-and-unit-7-side-movement",
+        "scale": 1
+      },
+      {
+        "name": "Unit-7",
+        "file": "characters/unit-7.webp",
+        "columns": 3,
+        "rows": 3,
+        "pivot": {
+          "x": 192,
+          "y": 362
+        },
+        "frames": [
+          "idle",
+          "walk",
+          "talk",
+          "right-idle",
+          "right-step-a",
+          "right-step-b",
+          "left-idle",
+          "left-step-a",
+          "left-step-b"
+        ],
+        "generatedFrom": "elderwood-and-ruins",
+        "gameId": "unit7",
+        "sideMovementGeneratedFrom": "woodcutter-and-unit-7-side-movement",
+        "scale": 1
+      }
+    ],
+    "enemies": [
+      {
+        "name": "Gloop",
+        "file": "enemies/gloop.webp",
+        "columns": 3,
+        "rows": 2,
+        "pivot": {
+          "x": 192,
+          "y": 362
+        },
+        "frames": [
+          "idle",
+          "squash",
+          "lunge",
+          "side-move-a",
+          "side-move-b",
+          "side-move-c"
+        ],
+        "generatedFrom": "gloop-and-ember-gloop",
+        "gameId": "gloop",
+        "sideMovementGeneratedFrom": "gloops-side-movement",
+        "sideMovementMirroredFor": "right",
+        "scale": 0.5
+      },
+      {
+        "name": "Ember Gloop",
+        "file": "enemies/ember-gloop.webp",
+        "columns": 3,
+        "rows": 2,
+        "pivot": {
+          "x": 192,
+          "y": 362
+        },
+        "frames": [
+          "idle",
+          "squash",
+          "lunge",
+          "side-move-a",
+          "side-move-b",
+          "side-move-c"
+        ],
+        "generatedFrom": "gloop-and-ember-gloop",
+        "gameId": "redgloop",
+        "sideMovementGeneratedFrom": "gloops-side-movement",
+        "sideMovementMirroredFor": "right",
+        "scale": 0.5
+      },
+      {
+        "name": "Thornling",
+        "file": "enemies/thornling.webp",
+        "columns": 3,
+        "rows": 2,
+        "pivot": {
+          "x": 192,
+          "y": 362
+        },
+        "frames": [
+          "idle",
+          "windup",
+          "lash",
+          "side-move-a",
+          "side-move-b",
+          "side-move-c"
+        ],
+        "generatedFrom": "thornling-and-duskbat",
+        "gameId": "thornling",
+        "sideMovementGeneratedFrom": "forest-side-movement",
+        "sideMovementMirroredFor": "right",
+        "scale": 0.75
+      },
+      {
+        "name": "Duskbat",
+        "file": "enemies/duskbat.webp",
+        "columns": 3,
+        "rows": 2,
+        "pivot": {
+          "x": 192,
+          "y": 192
+        },
+        "frames": [
+          "upstroke",
+          "wings-out",
+          "downstroke",
+          "side-move-a",
+          "side-move-b",
+          "side-move-c"
+        ],
+        "generatedFrom": "thornling-and-duskbat",
+        "gameId": "duskbat",
+        "sideMovementGeneratedFrom": "forest-side-movement",
+        "sideMovementMirroredFor": "right",
+        "scale": 0.5
+      },
+      {
+        "name": "Elder Wisp",
+        "file": "enemies/elder-wisp.webp",
+        "columns": 3,
+        "rows": 2,
+        "pivot": {
+          "x": 192,
+          "y": 192
+        },
+        "frames": [
+          "idle",
+          "sway",
+          "flare",
+          "side-move-a",
+          "side-move-b",
+          "side-move-c"
+        ],
+        "generatedFrom": "elder-and-void-wisps",
+        "gameId": "wisp",
+        "sideMovementGeneratedFrom": "wisps-side-movement",
+        "sideMovementMirroredFor": "right",
+        "scale": 0.5
+      },
+      {
+        "name": "Void Wisp",
+        "file": "enemies/void-wisp.webp",
+        "columns": 3,
+        "rows": 2,
+        "pivot": {
+          "x": 192,
+          "y": 192
+        },
+        "frames": [
+          "idle",
+          "sway",
+          "flare",
+          "side-move-a",
+          "side-move-b",
+          "side-move-c"
+        ],
+        "generatedFrom": "elder-and-void-wisps",
+        "gameId": "voidwisp",
+        "sideMovementGeneratedFrom": "wisps-side-movement",
+        "sideMovementMirroredFor": "right",
+        "scale": 0.5
+      },
+      {
+        "name": "Rustbot",
+        "file": "enemies/rustbot.webp",
+        "columns": 3,
+        "rows": 2,
+        "pivot": {
+          "x": 192,
+          "y": 362
+        },
+        "frames": [
+          "idle",
+          "windup",
+          "strike",
+          "side-move-a",
+          "side-move-b",
+          "side-move-c"
+        ],
+        "generatedFrom": "rustbot-and-sentinel",
+        "gameId": "rustbot",
+        "sideMovementGeneratedFrom": "robots-side-movement",
+        "sideMovementMirroredFor": "right",
+        "scale": 0.75
+      },
+      {
+        "name": "Sentinel",
+        "file": "enemies/sentinel.webp",
+        "columns": 3,
+        "rows": 2,
+        "pivot": {
+          "x": 192,
+          "y": 362
+        },
+        "frames": [
+          "idle",
+          "windup",
+          "strike",
+          "side-move-a",
+          "side-move-b",
+          "side-move-c"
+        ],
+        "generatedFrom": "rustbot-and-sentinel",
+        "gameId": "sentinel",
+        "sideMovementGeneratedFrom": "robots-side-movement",
+        "sideMovementMirroredFor": "right",
+        "scale": 0.75
+      },
+      {
+        "name": "Mossback Golem",
+        "file": "enemies/mossback-golem.webp",
+        "columns": 2,
+        "rows": 4,
+        "pivot": {
+          "x": 192,
+          "y": 362
+        },
+        "frames": [
+          "idle",
+          "stone-fist",
+          "quake",
+          "moss-regrowth",
+          "side-move-a",
+          "side-move-b",
+          "side-move-c",
+          "side-move-d"
+        ],
+        "generatedFrom": "mossback-golem",
+        "gameId": "golem",
+        "sideMovementGeneratedFrom": "golem-side-movement",
+        "sideMovementMirroredFor": "right",
+        "scale": 1
+      },
+      {
+        "name": "The Hollow King",
+        "file": "enemies/the-hollow-king.webp",
+        "columns": 2,
+        "rows": 4,
+        "pivot": {
+          "x": 192,
+          "y": 192
+        },
+        "frames": [
+          "idle",
+          "rend",
+          "cast",
+          "devour-hours",
+          "side-move-a",
+          "side-move-b",
+          "side-move-c",
+          "side-move-d"
+        ],
+        "generatedFrom": "hollow-king",
+        "gameId": "hollow",
+        "sideMovementGeneratedFrom": "hollow-king-side-movement",
+        "sideMovementMirroredFor": "right",
+        "scale": 1
+      }
+    ],
+    "effects": [
+      {
+        "name": "Basic Attack",
+        "file": "effects/basic-attack.webp",
+        "columns": 4,
+        "rows": 1,
+        "pivot": {
+          "x": 192,
+          "y": 192
+        },
+        "frames": [
+          "windup",
+          "build",
+          "impact",
+          "dissipate"
+        ],
+        "generatedFrom": "kael-and-basic",
+        "usedBy": [
+          "kael",
+          "bram",
+          "lyra"
+        ],
+        "scale": 0.5
+      },
+      {
+        "name": "Arc Slash",
+        "file": "effects/arc-slash.webp",
+        "columns": 4,
+        "rows": 1,
+        "pivot": {
+          "x": 192,
+          "y": 192
+        },
+        "frames": [
+          "windup",
+          "build",
+          "impact",
+          "dissipate"
+        ],
+        "generatedFrom": "kael-and-basic",
+        "usedBy": [
+          "kael"
+        ],
+        "scale": 0.5
+      },
+      {
+        "name": "Gale Spin",
+        "file": "effects/gale-spin.webp",
+        "columns": 4,
+        "rows": 1,
+        "pivot": {
+          "x": 192,
+          "y": 192
+        },
+        "frames": [
+          "windup",
+          "build",
+          "impact",
+          "dissipate"
+        ],
+        "generatedFrom": "kael-and-basic",
+        "usedBy": [
+          "kael"
+        ],
+        "scale": 0.5
+      },
+      {
+        "name": "Dawnbreaker",
+        "file": "effects/dawnbreaker.webp",
+        "columns": 4,
+        "rows": 1,
+        "pivot": {
+          "x": 192,
+          "y": 192
+        },
+        "frames": [
+          "windup",
+          "build",
+          "impact",
+          "dissipate"
+        ],
+        "generatedFrom": "kael-and-basic",
+        "usedBy": [
+          "kael"
+        ],
+        "scale": 0.5
+      },
+      {
+        "name": "Patch Kit",
+        "file": "effects/patch-kit.webp",
+        "columns": 4,
+        "rows": 1,
+        "pivot": {
+          "x": 192,
+          "y": 192
+        },
+        "frames": [
+          "windup",
+          "build",
+          "impact",
+          "dissipate"
+        ],
+        "generatedFrom": "bram-and-run",
+        "usedBy": [
+          "bram"
+        ],
+        "scale": 0.5
+      },
+      {
+        "name": "Rivet Shot",
+        "file": "effects/rivet-shot.webp",
+        "columns": 4,
+        "rows": 1,
+        "pivot": {
+          "x": 192,
+          "y": 192
+        },
+        "frames": [
+          "windup",
+          "build",
+          "impact",
+          "dissipate"
+        ],
+        "generatedFrom": "bram-and-run",
+        "usedBy": [
+          "bram"
+        ],
+        "scale": 0.5
+      },
+      {
+        "name": "Shock Mine",
+        "file": "effects/shock-mine.webp",
+        "columns": 4,
+        "rows": 1,
+        "pivot": {
+          "x": 192,
+          "y": 192
+        },
+        "frames": [
+          "windup",
+          "build",
+          "impact",
+          "dissipate"
+        ],
+        "generatedFrom": "bram-and-run",
+        "usedBy": [
+          "bram"
+        ],
+        "scale": 0.5
+      },
+      {
+        "name": "Run",
+        "file": "effects/run.webp",
+        "columns": 4,
+        "rows": 1,
+        "pivot": {
+          "x": 192,
+          "y": 192
+        },
+        "frames": [
+          "windup",
+          "build",
+          "impact",
+          "dissipate"
+        ],
+        "generatedFrom": "bram-and-run",
+        "usedBy": [
+          "kael",
+          "bram",
+          "lyra"
+        ],
+        "scale": 0.5
+      },
+      {
+        "name": "Ember",
+        "file": "effects/ember.webp",
+        "columns": 4,
+        "rows": 1,
+        "pivot": {
+          "x": 192,
+          "y": 192
+        },
+        "frames": [
+          "windup",
+          "build",
+          "impact",
+          "dissipate"
+        ],
+        "generatedFrom": "lyra-techs",
+        "usedBy": [
+          "lyra"
+        ],
+        "scale": 0.5
+      },
+      {
+        "name": "Mend",
+        "file": "effects/mend.webp",
+        "columns": 4,
+        "rows": 1,
+        "pivot": {
+          "x": 192,
+          "y": 192
+        },
+        "frames": [
+          "windup",
+          "build",
+          "impact",
+          "dissipate"
+        ],
+        "generatedFrom": "lyra-techs",
+        "usedBy": [
+          "lyra"
+        ],
+        "scale": 0.5
+      },
+      {
+        "name": "Glacier",
+        "file": "effects/glacier.webp",
+        "columns": 4,
+        "rows": 1,
+        "pivot": {
+          "x": 192,
+          "y": 192
+        },
+        "frames": [
+          "windup",
+          "build",
+          "impact",
+          "dissipate"
+        ],
+        "generatedFrom": "lyra-techs",
+        "usedBy": [
+          "lyra"
+        ],
+        "scale": 0.5
+      },
+      {
+        "name": "Rekindle",
+        "file": "effects/rekindle.webp",
+        "columns": 4,
+        "rows": 1,
+        "pivot": {
+          "x": 192,
+          "y": 192
+        },
+        "frames": [
+          "windup",
+          "build",
+          "impact",
+          "dissipate"
+        ],
+        "generatedFrom": "lyra-techs",
+        "usedBy": [
+          "lyra"
+        ],
+        "scale": 0.5
+      },
+      {
+        "name": "Blazing Edge",
+        "file": "effects/blazing-edge.webp",
+        "columns": 4,
+        "rows": 1,
+        "pivot": {
+          "x": 192,
+          "y": 192
+        },
+        "frames": [
+          "windup",
+          "build",
+          "impact",
+          "dissipate"
+        ],
+        "generatedFrom": "combo-techs",
+        "usedBy": [
+          "kael",
+          "lyra"
+        ],
+        "scale": 0.5
+      },
+      {
+        "name": "Gear Crusher",
+        "file": "effects/gear-crusher.webp",
+        "columns": 4,
+        "rows": 1,
+        "pivot": {
+          "x": 192,
+          "y": 192
+        },
+        "frames": [
+          "windup",
+          "build",
+          "impact",
+          "dissipate"
+        ],
+        "generatedFrom": "combo-techs",
+        "usedBy": [
+          "kael",
+          "bram"
+        ],
+        "scale": 0.5
+      },
+      {
+        "name": "Storm Engine",
+        "file": "effects/storm-engine.webp",
+        "columns": 4,
+        "rows": 1,
+        "pivot": {
+          "x": 192,
+          "y": 192
+        },
+        "frames": [
+          "windup",
+          "build",
+          "impact",
+          "dissipate"
+        ],
+        "generatedFrom": "combo-techs",
+        "usedBy": [
+          "bram",
+          "lyra"
+        ],
+        "scale": 0.5
+      },
+      {
+        "name": "Chrono Rend",
+        "file": "effects/chrono-rend.webp",
+        "columns": 4,
+        "rows": 1,
+        "pivot": {
+          "x": 192,
+          "y": 192
+        },
+        "frames": [
+          "windup",
+          "build",
+          "impact",
+          "dissipate"
+        ],
+        "generatedFrom": "combo-techs",
+        "usedBy": [
+          "kael",
+          "bram",
+          "lyra"
+        ],
+        "scale": 0.5
+      },
+      {
+        "name": "Tackle",
+        "file": "effects/tackle.webp",
+        "columns": 4,
+        "rows": 1,
+        "pivot": {
+          "x": 192,
+          "y": 192
+        },
+        "frames": [
+          "windup",
+          "build",
+          "impact",
+          "dissipate"
+        ],
+        "generatedFrom": "field-enemy-moves",
+        "usedBy": [
+          "gloop",
+          "redgloop"
+        ],
+        "scale": 0.5
+      },
+      {
+        "name": "Spit Flame",
+        "file": "effects/spit-flame.webp",
+        "columns": 4,
+        "rows": 1,
+        "pivot": {
+          "x": 192,
+          "y": 192
+        },
+        "frames": [
+          "windup",
+          "build",
+          "impact",
+          "dissipate"
+        ],
+        "generatedFrom": "field-enemy-moves",
+        "usedBy": [
+          "redgloop"
+        ],
+        "scale": 0.5
+      },
+      {
+        "name": "Lash",
+        "file": "effects/lash.webp",
+        "columns": 4,
+        "rows": 1,
+        "pivot": {
+          "x": 192,
+          "y": 192
+        },
+        "frames": [
+          "windup",
+          "build",
+          "impact",
+          "dissipate"
+        ],
+        "generatedFrom": "field-enemy-moves",
+        "usedBy": [
+          "thornling"
+        ],
+        "scale": 0.5
+      },
+      {
+        "name": "Pollen Burst",
+        "file": "effects/pollen-burst.webp",
+        "columns": 4,
+        "rows": 1,
+        "pivot": {
+          "x": 192,
+          "y": 192
+        },
+        "frames": [
+          "windup",
+          "build",
+          "impact",
+          "dissipate"
+        ],
+        "generatedFrom": "field-enemy-moves",
+        "usedBy": [
+          "thornling"
+        ],
+        "scale": 0.5
+      },
+      {
+        "name": "Bite",
+        "file": "effects/bite.webp",
+        "columns": 4,
+        "rows": 1,
+        "pivot": {
+          "x": 192,
+          "y": 192
+        },
+        "frames": [
+          "windup",
+          "build",
+          "impact",
+          "dissipate"
+        ],
+        "generatedFrom": "forest-enemy-moves",
+        "usedBy": [
+          "duskbat"
+        ],
+        "scale": 0.5
+      },
+      {
+        "name": "Spirit Flare",
+        "file": "effects/spirit-flare.webp",
+        "columns": 4,
+        "rows": 1,
+        "pivot": {
+          "x": 192,
+          "y": 192
+        },
+        "frames": [
+          "windup",
+          "build",
+          "impact",
+          "dissipate"
+        ],
+        "generatedFrom": "forest-enemy-moves",
+        "usedBy": [
+          "wisp"
+        ],
+        "scale": 0.5
+      },
+      {
+        "name": "Stone Fist",
+        "file": "effects/stone-fist.webp",
+        "columns": 4,
+        "rows": 1,
+        "pivot": {
+          "x": 192,
+          "y": 192
+        },
+        "frames": [
+          "windup",
+          "build",
+          "impact",
+          "dissipate"
+        ],
+        "generatedFrom": "forest-enemy-moves",
+        "usedBy": [
+          "golem"
+        ],
+        "scale": 0.5
+      },
+      {
+        "name": "Quake",
+        "file": "effects/quake.webp",
+        "columns": 4,
+        "rows": 1,
+        "pivot": {
+          "x": 192,
+          "y": 192
+        },
+        "frames": [
+          "windup",
+          "build",
+          "impact",
+          "dissipate"
+        ],
+        "generatedFrom": "forest-enemy-moves",
+        "usedBy": [
+          "golem"
+        ],
+        "scale": 0.5
+      },
+      {
+        "name": "Moss Regrowth",
+        "file": "effects/moss-regrowth.webp",
+        "columns": 4,
+        "rows": 1,
+        "pivot": {
+          "x": 192,
+          "y": 192
+        },
+        "frames": [
+          "windup",
+          "build",
+          "impact",
+          "dissipate"
+        ],
+        "generatedFrom": "shrine-and-machine-moves",
+        "usedBy": [
+          "golem"
+        ],
+        "scale": 0.5
+      },
+      {
+        "name": "Drill Arm",
+        "file": "effects/drill-arm.webp",
+        "columns": 4,
+        "rows": 1,
+        "pivot": {
+          "x": 192,
+          "y": 192
+        },
+        "frames": [
+          "windup",
+          "build",
+          "impact",
+          "dissipate"
+        ],
+        "generatedFrom": "shrine-and-machine-moves",
+        "usedBy": [
+          "rustbot"
+        ],
+        "scale": 0.5
+      },
+      {
+        "name": "Laser Sweep",
+        "file": "effects/laser-sweep.webp",
+        "columns": 4,
+        "rows": 1,
+        "pivot": {
+          "x": 192,
+          "y": 192
+        },
+        "frames": [
+          "windup",
+          "build",
+          "impact",
+          "dissipate"
+        ],
+        "generatedFrom": "shrine-and-machine-moves",
+        "usedBy": [
+          "rustbot"
+        ],
+        "scale": 0.5
+      },
+      {
+        "name": "Null Ray",
+        "file": "effects/null-ray.webp",
+        "columns": 4,
+        "rows": 1,
+        "pivot": {
+          "x": 192,
+          "y": 192
+        },
+        "frames": [
+          "windup",
+          "build",
+          "impact",
+          "dissipate"
+        ],
+        "generatedFrom": "shrine-and-machine-moves",
+        "usedBy": [
+          "voidwisp"
+        ],
+        "scale": 0.5
+      },
+      {
+        "name": "Crush",
+        "file": "effects/crush.webp",
+        "columns": 4,
+        "rows": 1,
+        "pivot": {
+          "x": 192,
+          "y": 192
+        },
+        "frames": [
+          "windup",
+          "build",
+          "impact",
+          "dissipate"
+        ],
+        "generatedFrom": "sentinel-and-hollow-moves",
+        "usedBy": [
+          "sentinel"
+        ],
+        "scale": 0.5
+      },
+      {
+        "name": "Overload",
+        "file": "effects/overload.webp",
+        "columns": 4,
+        "rows": 1,
+        "pivot": {
+          "x": 192,
+          "y": 192
+        },
+        "frames": [
+          "windup",
+          "build",
+          "impact",
+          "dissipate"
+        ],
+        "generatedFrom": "sentinel-and-hollow-moves",
+        "usedBy": [
+          "sentinel"
+        ],
+        "scale": 0.5
+      },
+      {
+        "name": "Rend",
+        "file": "effects/rend.webp",
+        "columns": 4,
+        "rows": 1,
+        "pivot": {
+          "x": 192,
+          "y": 192
+        },
+        "frames": [
+          "windup",
+          "build",
+          "impact",
+          "dissipate"
+        ],
+        "generatedFrom": "sentinel-and-hollow-moves",
+        "usedBy": [
+          "hollow"
+        ],
+        "scale": 0.5
+      },
+      {
+        "name": "Time Fracture",
+        "file": "effects/time-fracture.webp",
+        "columns": 4,
+        "rows": 1,
+        "pivot": {
+          "x": 192,
+          "y": 192
+        },
+        "frames": [
+          "windup",
+          "build",
+          "impact",
+          "dissipate"
+        ],
+        "generatedFrom": "sentinel-and-hollow-moves",
+        "usedBy": [
+          "hollow"
+        ],
+        "scale": 0.5
+      },
+      {
+        "name": "Unmake",
+        "file": "effects/unmake.webp",
+        "columns": 4,
+        "rows": 1,
+        "pivot": {
+          "x": 192,
+          "y": 192
+        },
+        "frames": [
+          "windup",
+          "build",
+          "impact",
+          "dissipate"
+        ],
+        "generatedFrom": "hollow-moves-and-tonics",
+        "usedBy": [
+          "hollow"
+        ],
+        "scale": 0.5
+      },
+      {
+        "name": "Devour Hours",
+        "file": "effects/devour-hours.webp",
+        "columns": 4,
+        "rows": 1,
+        "pivot": {
+          "x": 192,
+          "y": 192
+        },
+        "frames": [
+          "windup",
+          "build",
+          "impact",
+          "dissipate"
+        ],
+        "generatedFrom": "hollow-moves-and-tonics",
+        "usedBy": [
+          "hollow"
+        ],
+        "scale": 0.5
+      },
+      {
+        "name": "Tonic",
+        "file": "effects/tonic.webp",
+        "columns": 4,
+        "rows": 1,
+        "pivot": {
+          "x": 192,
+          "y": 192
+        },
+        "frames": [
+          "windup",
+          "build",
+          "impact",
+          "dissipate"
+        ],
+        "generatedFrom": "hollow-moves-and-tonics",
+        "itemId": "tonic",
+        "scale": 0.5
+      },
+      {
+        "name": "Hi-Tonic",
+        "file": "effects/hi-tonic.webp",
+        "columns": 4,
+        "rows": 1,
+        "pivot": {
+          "x": 192,
+          "y": 192
+        },
+        "frames": [
+          "windup",
+          "build",
+          "impact",
+          "dissipate"
+        ],
+        "generatedFrom": "hollow-moves-and-tonics",
+        "itemId": "hitonic",
+        "scale": 0.5
+      },
+      {
+        "name": "Ether",
+        "file": "effects/ether.webp",
+        "columns": 4,
+        "rows": 1,
+        "pivot": {
+          "x": 192,
+          "y": 192
+        },
+        "frames": [
+          "windup",
+          "build",
+          "impact",
+          "dissipate"
+        ],
+        "generatedFrom": "restoration-items",
+        "itemId": "ether",
+        "scale": 0.5
+      },
+      {
+        "name": "Revival Seed",
+        "file": "effects/revival-seed.webp",
+        "columns": 4,
+        "rows": 1,
+        "pivot": {
+          "x": 192,
+          "y": 192
+        },
+        "frames": [
+          "windup",
+          "build",
+          "impact",
+          "dissipate"
+        ],
+        "generatedFrom": "restoration-items",
+        "itemId": "seed",
+        "scale": 0.5
+      },
+      {
+        "name": "Elixir",
+        "file": "effects/elixir.webp",
+        "columns": 4,
+        "rows": 1,
+        "pivot": {
+          "x": 192,
+          "y": 192
+        },
+        "frames": [
+          "windup",
+          "build",
+          "impact",
+          "dissipate"
+        ],
+        "generatedFrom": "restoration-items",
+        "itemId": "elixir",
+        "scale": 0.5
+      }
+    ],
+    "props": [
+      {
+        "name": "Treasure Chest",
+        "file": "props/chest.webp",
+        "columns": 2,
+        "rows": 1,
+        "pivot": {
+          "x": 192,
+          "y": 362
+        },
+        "frames": [
+          "closed",
+          "open"
+        ],
+        "generatedFrom": "chest",
+        "gameId": "chest",
+        "scale": 0.5
+      }
+    ]
+  },
+  "generation": {
+    "tool": "Built-in ImageGen",
+    "batches": [
+      {
+        "id": "kael",
+        "prompts": [
+          "Use case: stylized-concept. Production sprite sheet for Chronoshard: Thirteen Chimes, an original time-travel fantasy RPG. Hand-drawn animation cels, bold confident dark aubergine ink contour, crisp graphic gouache and two-tone cel shading, selectively rich brassy warm highlights, slightly chunky shapes that read at gameplay scale, beautifully finished independent game art. True transparent RGBA background, no checkerboard baked pixels, no ground, no cast shadow, no scenery, no title, no text, no letters, no grid outlines, no frame-border decorations. Every sprite must be totally isolated with generously padded margins on every side and fully visible including weapons and effects. Precise evenly spaced animation atlas grid, do not add or omit any cells. Center each sprite within its equal cell. Consistent character design and anatomy in every frame.\nSingle character atlas, square canvas, exactly 3 columns × 3 rows, nine separate drawings of Kael, heroic young adult swordsman, bright rust-red spiky hair, warm tan skin, strong cobalt-blue tunic, brown trousers and leather belt, steel sword. Compact JRPG proportions around 3.5 heads tall. Row 1 left to right: front-facing idle, front-facing left-foot walk, front-facing right-foot walk, sword sheathed. Row 2: back-facing idle, back-facing left-foot walk, back-facing right-foot walk, sword sheathed. Row 3: right-facing battle ready with sword, right-facing sword slash follow-through with no drawn effect, celebratory right-facing sword-up pose. Readable feet and clean gear silhouettes."
+        ]
+      },
+      {
+        "id": "bram",
+        "prompts": [
+          "Use case: stylized-concept. Production sprite sheet for Chronoshard: Thirteen Chimes, an original time-travel fantasy RPG. Hand-drawn animation cels, bold confident dark aubergine ink contour, crisp graphic gouache and two-tone cel shading, selectively rich brassy warm highlights, slightly chunky shapes that read at gameplay scale, beautifully finished independent game art. True transparent RGBA background, no checkerboard baked pixels, no ground, no cast shadow, no scenery, no title, no text, no letters, no grid outlines, no frame-border decorations. Every sprite must be totally isolated with generously padded margins on every side and fully visible including weapons and effects. Precise evenly spaced animation atlas grid, do not add or omit any cells. Center each sprite within its equal cell. Consistent character design and anatomy in every frame.\nSingle character atlas, square canvas, exactly 3 columns × 3 rows, nine separate drawings of Bram, broad-shouldered young adult tinkerer, warm medium-brown skin, brown hair under brown cap with big brass goggles, ochre work shirt and charcoal slate trousers, a large steel adjustable wrench carried as his weapon. Compact JRPG proportions around 3.5 heads tall. Row 1 left to right: front-facing idle, front-facing left-foot walk, front-facing right-foot walk. Row 2: back-facing idle, back-facing left-foot walk, back-facing right-foot walk. Row 3: right-facing battle ready with wrench, right-facing wrench strike follow-through with no drawn effect, joyful right-facing wrench-up pose. Readable feet and clean gear silhouettes."
+        ]
+      },
+      {
+        "id": "lyra",
+        "prompts": [
+          "Use case: stylized-concept. Production sprite sheet for Chronoshard: Thirteen Chimes, an original time-travel fantasy RPG. Hand-drawn animation cels, bold confident dark aubergine ink contour, crisp graphic gouache and two-tone cel shading, selectively rich brassy warm highlights, slightly chunky shapes that read at gameplay scale, beautifully finished independent game art. True transparent RGBA background, no checkerboard baked pixels, no ground, no cast shadow, no scenery, no title, no text, no letters, no grid outlines, no frame-border decorations. Every sprite must be totally isolated with generously padded margins on every side and fully visible including weapons and effects. Precise evenly spaced animation atlas grid, do not add or omit any cells. Center each sprite within its equal cell. Consistent character design and anatomy in every frame.\nSingle character atlas, square canvas, exactly 3 columns × 3 rows, nine separate drawings of Lyra, a young adult forest warden with long ice-blue hair, light warm skin, purple tunic and dark violet trousers, golden belt with compact forest details, long plum wood staff with icy gem. Compact JRPG proportions around 3.5 heads tall. Row 1 left to right: front-facing idle, front-facing left-foot walk, front-facing right-foot walk. Row 2: back-facing idle, back-facing left-foot walk, back-facing right-foot walk. Row 3: right-facing battle ready with staff, right-facing staff casting pose with no emitted effect, right-facing staff-up victory. Preserve the same hair, clothes, belt, and staff."
+        ]
+      },
+      {
+        "id": "ashvale-family",
+        "prompts": [
+          "undefined\n Single square NPC sprite atlas, EXACTLY 3 columns by 3 rows, 9 equally spaced drawings. Every row is ONE distinct NPC, each repeated three times in three separate cells, full-body with same outfit, face and scale. Column 1 front-facing idle arms rested, column 2 front-facing walking stride with opposite limbs, column 3 front-facing speaking gesture with one raised hand. Adult height about 3.5 heads, smaller child. Fixed eye-level game camera. Preserve each row's costume, hair and silhouette. Row 1 is Kael's Mom, chestnut shoulder-length hair, warm light skin, muted rose top and berry skirt, practical ash-brown shoes. Row 2 is Sleepy Gear Innkeeper, long auburn hair, warm fair skin, white apron on a muted slate-violet dress. Row 3 is Ashvale Kid, short spiky golden-blond hair, fair skin, bright vermilion top and indigo trousers.",
+          "Remove the entire faint gray checker-pattern field, colored halos, cast shadows, and grid lines from this sprite atlas. Isolate all nine existing hand-drawn figures as separate clean cutouts, no background or backdrop in any pixel between them. Actual PNG alpha=0 outside figures; no solid fills. Preserve every character, costume, pose, and the exact 3 columns × 3 rows layout. Pixel art should not be introduced. Keep the tight dark outline and clean feet. This is an edit of input image 1."
+        ]
+      },
+      {
+        "id": "ashvale-townsfolk",
+        "prompts": [
+          "undefined\n Single square NPC sprite atlas, EXACTLY 3 columns by 3 rows, 9 equally spaced drawings. Every row is ONE distinct NPC, each repeated three times in three separate cells, full-body with same outfit, face and scale. Column 1 front-facing idle arms rested, column 2 front-facing walking stride with opposite limbs, column 3 front-facing speaking gesture with one raised hand. Adult height about 3.5 heads, smaller child. Fixed eye-level game camera. Preserve each row's costume, hair and silhouette. Row 1 is the General Store Merchant, black hair under a dark brown cap, copper-brown skin, cinnamon work shirt, deep brown trousers, a few belt pouches. Row 2 is Old Fenn, older man, short dark brown hair with silver temples, warm beige skin, muted olive green pullover, tan-brown trousers, scholarly expression, no handheld object. Row 3 is the Clocktower Watchman, adult watchdog of the village, short chestnut hair, warm beige skin, olive tunic with a shoulder strap and modest brass watch badge, brown trousers, no drawn weapon.",
+          "Image 1 is the sprite atlas to edit. Extract every illustrated sprite with absolutely clean transparent gutters and no backdrop, border or panel. PNG with actual alpha=0 outside the silhouettes, no visible checkerboard, no shadows, no title and no grid lines. This is a background removal edit only. Preserve all nine drawings exactly in three columns and three rows: copper-skinned brown-capped merchant, older gray-haired Fenn in olive, watchman in olive with badge. Preserve every pose and costume detail, all the way through the boots. Remove all cast shadows."
+        ]
+      },
+      {
+        "id": "elderwood-keepers",
+        "prompts": [
+          "undefined\n Single square NPC sprite atlas, EXACTLY 3 columns by 3 rows, 9 equally spaced drawings. Every row is ONE distinct NPC, each repeated three times in three separate cells, full-body with same outfit, face and scale. Column 1 front-facing idle arms rested, column 2 front-facing walking stride with opposite limbs, column 3 front-facing speaking gesture with one raised hand. Adult height about 3.5 heads, smaller child. Fixed eye-level game camera. Preserve each row's costume, hair and silhouette. Row 1 is Elder Moira, elderly sage with bald crown, fine white side hair and a full short white beard, tan-peach skin, moss-green robe. Row 2 is Hearthkeeper, long auburn hair and white apron over a slate-violet dress, a rustic cream shawl to distinguish from the modern innkeeper. Row 3 is the Herbalist, face partially framed by a dusty violet hood, warm tan skin, lavender robe, deep plum hem, small herb pouch."
+        ]
+      },
+      {
+        "id": "elderwood-and-ruins",
+        "prompts": [
+          "undefined\n Single square NPC sprite atlas, EXACTLY 3 columns by 3 rows, 9 equally spaced drawings. Every row is ONE distinct NPC, each repeated three times in three separate cells, full-body with same outfit, face and scale. Column 1 front-facing idle arms rested, column 2 front-facing walking stride with opposite limbs, column 3 front-facing speaking gesture with one raised hand. Adult height about 3.5 heads, smaller child. Fixed eye-level game camera. Preserve each row's costume, hair and silhouette. Row 1 is the Elderwood Child, short spiky honey-blond hair, light peach skin, brick-red top and napped blue trousers with a little flax sash. Row 2 is the Woodcutter, brown cropped hair, warm beige skin, forest-olive top, brown trousers and strapped work gloves, hands empty. Row 3 is Unit-7, small humanoid former-toaster service robot, steel-blue bald head, dark metal goggles, gray-blue squared toaster torso and slate plate limbs, tiny amber chest readout with no letters."
+        ]
+      },
+      {
+        "id": "gloop-and-ember-gloop",
+        "prompts": [
+          "undefined\n Single enemy sprite atlas, landscape aspect ratio. EXACTLY 3 columns by 2 rows, six equal cells. Every row is ONE distinct enemy shown three times. Column 1 idle silhouette, column 2 anticipation, column 3 attack or locomotion follow-through described below. Same side-on three-quarter perspective facing left and same size per row, sprites stay centered. Row 1 Gloop, green glossy jelly dome with light mint bubbles and two wide eyes: regular rounded idle, squash low and wide, stretch upward and lean left for tackle. Row 2 Ember Gloop, orange-red glossy jelly dome with yellow-orange flame tuft and two wide eyes: rounded idle, squash low and wide, lunge left with a brighter flame tuft. No emitting attacks, just the monsters.",
+          "Extract six illustrated game sprites from input 1. Completely remove the charcoal stage backgrounds, dividing lines and ground shadows. Preserve the existing art for the luminous green Gloop and flame-tuft Ember Gloop, faces, contact footprints and their existing exact 3 columns by 2 rows with one separate sprite per cell. Actual PNG transparency and alpha = 0 all the way around each art sprite. Preserve the rich hand-painted outline, no ground or opaque backdrop and no grid lines."
+        ]
+      },
+      {
+        "id": "thornling-and-duskbat",
+        "prompts": [
+          "undefined\n Single enemy sprite atlas, landscape aspect ratio. EXACTLY 3 columns by 2 rows, six equal cells. Every row is ONE distinct enemy shown three times. Column 1 idle silhouette, column 2 anticipation, column 3 attack or locomotion follow-through described below. Same side-on three-quarter perspective facing left and same size per row, sprites stay centered. Row 1 Thornling, purple carnivorous plant with round toothy face, magenta petals, ochre eyes and curling barbed green vines: low idle, stems coil, leftward vine lash contracted inside cell. Row 2 Duskbat, small dark blue-violet leathery bat with lilac wing membranes, large ears and two yellow eyes: wing upstroke, wing extended laterally, folded downward downstroke. No motion trails.",
+          "Image 1 is the sprite atlas to edit. Extract every illustrated sprite with absolutely clean transparent gutters and no backdrop, border or panel. PNG with actual alpha=0 outside the silhouettes, no visible checkerboard, no shadows, no title and no grid lines. This is a background removal edit only. Preserve six hand-drawn monster sprites in three columns by two rows: toothy violet thorn plant three frames in row 1 and yellow-eyed indigo bat three wing positions in row 2. Remove every horizontal or vertical line and background residue. Keep all actual leaf, thorn, and wing tips even near the cell edges."
+        ]
+      },
+      {
+        "id": "elder-and-void-wisps",
+        "prompts": [
+          "undefined\n Single enemy sprite atlas, landscape aspect ratio. EXACTLY 3 columns by 2 rows, six equal cells. Every row is ONE distinct enemy shown three times. Column 1 idle silhouette, column 2 anticipation, column 3 attack or locomotion follow-through described below. Same side-on three-quarter perspective facing left and same size per row, sprites stay centered. Row 1 Elder Wisp, luminous pale-cyan teal spirit flame, gleaming warm-white core with two small dark eyes, flowing droplet tail: upright idle, curved tail, intensified flare, all staying contained close to form. Row 2 Void Wisp, violet and magenta spirit flame with dark indigo hollow heart and white slit eyes: upright idle, curled tail, compressed brighter iris. Distinct palettes, delicate alpha around wisps, solid readable contours.",
+          "Image 1 is the sprite atlas to edit. Extract every illustrated sprite with absolutely clean transparent gutters and no backdrop, border or panel. PNG with actual alpha=0 outside the silhouettes, no visible checkerboard, no shadows, no title and no grid lines. This is a background removal edit only. Preserve six individual bright wisps in three columns and two rows, cyan Elder Wisp on top, violet Void Wisp below. Keep their same faces, same swirling strokes, little sparks, and intact eyelights. Remove the dark backgrounds, keeping the actual glow soft and very tight to the spirit silhouette."
+        ]
+      },
+      {
+        "id": "rustbot-and-sentinel",
+        "prompts": [
+          "undefined\n Single enemy sprite atlas, landscape aspect ratio. EXACTLY 3 columns by 2 rows, six equal cells. Every row is ONE distinct enemy shown three times. Column 1 idle silhouette, column 2 anticipation, column 3 attack or locomotion follow-through described below. Same side-on three-quarter perspective facing left and same size per row, sprites stay centered. Row 1 Rustbot, small chunky oxidized russet and dull brown work robot with a conical drill arm, single amber optic and chunky treads: idle, drill cocked back, drill extended left. Row 2 Sentinel, tall blue-gray plated guardian robot with broad shoulders, split gold visor, and heavy armored arms: grounded idle, raised fist, leftward striking fist. No outgoing effects.",
+          "Image 1 is the sprite atlas to edit. Extract every illustrated sprite with absolutely clean transparent gutters and no backdrop, border or panel. PNG with actual alpha=0 outside the silhouettes, no visible checkerboard, no shadows, no title and no grid lines. This is a background removal edit only. Preserve all six drawings exactly in three columns by two rows: orange-brown treaded drill robot above and blue-gray guardian with yellow visor below. Preserve every pose, the actual panels, joints and treads down to the feet. Remove dark shadows, outlines forming the grid, and the dusky gray background completely. Keep exact portrait positions of each robot."
+        ]
+      },
+      {
+        "id": "mossback-golem",
+        "prompts": [
+          "Use case: stylized-concept. Production sprite sheet for Chronoshard: Thirteen Chimes, an original time-travel fantasy RPG. Hand-drawn animation cels, bold confident dark aubergine ink contour, crisp graphic gouache and two-tone cel shading, selectively rich brassy warm highlights, slightly chunky shapes that read at gameplay scale, beautifully finished independent game art. True transparent RGBA background, no checkerboard baked pixels, no ground, no cast shadow, no scenery, no title, no text, no letters, no grid outlines, no frame-border decorations. Every sprite must be totally isolated with generously padded margins on every side and fully visible including weapons and effects. Precise evenly spaced animation atlas grid, do not add or omit any cells. Center each sprite within its equal cell. Consistent character design and anatomy in every frame.\n2 × 2 game animation sprite atlas, four drawings of the same Mossback Golem facing left. Muted gray boulder giant, big rectangular stone fists, mossy shoulders and fern clumps, glowing green eyes. Top left idle, top right punch left, bottom left ground slam, bottom right emerald moss self-healing. Huge blank transparent gutters all the way around each pose, absolutely no ground or panel background."
+        ]
+      },
+      {
+        "id": "hollow-king",
+        "prompts": [
+          "Use case: stylized-concept. Production sprite sheet for Chronoshard: Thirteen Chimes, an original time-travel fantasy RPG. Hand-drawn animation cels, bold confident dark aubergine ink contour, crisp graphic gouache and two-tone cel shading, selectively rich brassy warm highlights, slightly chunky shapes that read at gameplay scale, beautifully finished independent game art. True transparent RGBA background, no checkerboard baked pixels, no ground, no cast shadow, no scenery, no title, no text, no letters, no grid outlines, no frame-border decorations. Every sprite must be totally isolated with generously padded margins on every side and fully visible including weapons and effects. Precise evenly spaced animation atlas grid, do not add or omit any cells. Center each sprite within its equal cell. Consistent character design and anatomy in every frame.\nSingle enemy atlas, square canvas exactly 2 columns × 2 rows, four drawings of the same final boss The Hollow King facing left in three-quarter profile. Tall floating dark-violet hooded sovereign, faceless black opening with magenta eyes, broken crown inside or above hood, tattered layered purple mantle, clawed hands and tiny suspended lilac time shards close to body. First row: floating idle with claws down; lunging swipe to left. Second row: spellcasting arms spread with a few tight floating shards; devouring pose with open jagged hollow in chest or hood and hands reaching toward it. Same crown and robe silhouette every frame. Boss dark and dramatic, clear at gameplay scale."
+        ]
+      },
+      {
+        "id": "kael-and-basic",
+        "prompts": [
+          "Use case: stylized-concept. Production VFX animation sprite sheet for the original game Chronoshard: Thirteen Chimes, an original time-travel fantasy RPG. Hand-drawn special effects, expressive ink shapes with hand-painted cel highlights and fine brush fringes, clear at game scale, restrained luminous glows confined close to their marks. True transparent RGBA background, no fake checkerboard, no backdrop, no scene, no poster, no character, no hand, no body, no UI, no captions, no labels, no letters, no boundary lines, no frame icons, no framing circles unless explicitly described as the effect. Orthographic action effects. All visual objects and particles fully inside their own cell with transparent gutters. Draw EXACTLY 4 equally spaced columns in an evenly aligned atlas, one distinct frame centered in every cell, no empty frames. The four columns form a temporal sequence LEFT TO RIGHT, first a small visible anticipation, then growing build, then peak shape, then a reduced but visible dissipating trace. Every row is a separate effect with its own distinct color and silhouette. Place all rows and columns consistently across the canvas. Row numbers below are instructions only.\nExactly 4 columns by 4 rows (16 drawings); square canvas. \nRow 1: Basic Attack: a simple single short steel-white diagonal slash with one pale blue impact spark. Compact slash silhouette, shortest mark in this atlas.\nRow 2: Arc Slash: three elongated nested arcing sword marks in ivory and light gold, blue steel edge; distinctly triple arcs at peak even without a sword or figure.\nRow 3: Gale Spin: a rising wide pale sky-blue and silver hurricane ring with clean horizontal spin, lively curved wind brushwork.\nRow 4: Dawnbreaker: a single vertical sun-gold and orange pillar of fire with sharp white-hot blade-shaped center and a flaring base."
+        ]
+      },
+      {
+        "id": "bram-and-run",
+        "prompts": [
+          "Use case: stylized-concept. Production VFX animation sprite sheet for the original game Chronoshard: Thirteen Chimes, an original time-travel fantasy RPG. Hand-drawn special effects, expressive ink shapes with hand-painted cel highlights and fine brush fringes, clear at game scale, restrained luminous glows confined close to their marks. True transparent RGBA background, no fake checkerboard, no backdrop, no scene, no poster, no character, no hand, no body, no UI, no captions, no labels, no letters, no boundary lines, no frame icons, no framing circles unless explicitly described as the effect. Orthographic action effects. All visual objects and particles fully inside their own cell with transparent gutters. Draw EXACTLY 4 equally spaced columns in an evenly aligned atlas, one distinct frame centered in every cell, no empty frames. The four columns form a temporal sequence LEFT TO RIGHT, first a small visible anticipation, then growing build, then peak shape, then a reduced but visible dissipating trace. Every row is a separate effect with its own distinct color and silhouette. Place all rows and columns consistently across the canvas. Row numbers below are instructions only.\nExactly 4 columns by 4 rows (16 drawings); square canvas. \nRow 1: Patch Kit: an amber medical patch sigil with a green central plus made of light and tight jade healing sparks, main peak in same anchor.\nRow 2: Rivet Shot: compressed bronze rivet streak fired rightwards in a straight horizontal trajectory, bright yellow-gold impact star, sparks settling.\nRow 3: Shock Mine: small concentrated yellow-white electric charge growing into branching forked lightning and a low radiant shock ring, industrial flecks.\nRow 4: Run: tight low horizontal retreat gust and gray-blue footstep dust sweeping left, strong simple squashed shapes, no shoes and no person."
+        ]
+      },
+      {
+        "id": "lyra-techs",
+        "prompts": [
+          "Use case: stylized-concept. Production VFX animation sprite sheet for the original game Chronoshard: Thirteen Chimes, an original time-travel fantasy RPG. Hand-drawn special effects, expressive ink shapes with hand-painted cel highlights and fine brush fringes, clear at game scale, restrained luminous glows confined close to their marks. True transparent RGBA background, no fake checkerboard, no backdrop, no scene, no poster, no character, no hand, no body, no UI, no captions, no labels, no letters, no boundary lines, no frame icons, no framing circles unless explicitly described as the effect. Orthographic action effects. All visual objects and particles fully inside their own cell with transparent gutters. Draw EXACTLY 4 equally spaced columns in an evenly aligned atlas, one distinct frame centered in every cell, no empty frames. The four columns form a temporal sequence LEFT TO RIGHT, first a small visible anticipation, then growing build, then peak shape, then a reduced but visible dissipating trace. Every row is a separate effect with its own distinct color and silhouette. Place all rows and columns consistently across the canvas. Row numbers below are instructions only.\nExactly 4 columns by 4 rows (16 drawings); square canvas. \nRow 1: Ember: tight orange-scarlet fireball with molten yellow core and thin curling ember plume, one focused impact and a few fading embers.\nRow 2: Mend: emerald mint-green ring of softly curved leaves and rounded healing motes, pale soft center, smooth refreshing whorl.\nRow 3: Glacier: frosty blue-white falling shards crystallize into an angular cyan ice cluster, bright facets, then break into a few snow crystals.\nRow 4: Rekindle: a rising white-gold revival flame shaped like lifting feather tips, surrounded by a pale warm purple halo and tiny stellar flecks."
+        ]
+      },
+      {
+        "id": "combo-techs",
+        "prompts": [
+          "Transparent sprite sheet for an original fantasy RPG, hand drawn cel ink and gouache. Exactly four columns and four rows. Each row is a separate move in temporal order left to right: tiny windup, buildup, peak, dissipating sparks. Row 1 Blazing Edge: vermilion and gold flaming crescent sword stroke. Row 2 Gear Crusher: brass rotating cogs and silver circular crushing slash. Row 3 Storm Engine: cyan and gold lightning braided around a brass turbine core. Row 4 Chrono Rend: purple and gold fractured clock face with thirteen ticks and no numerals, spinning time shards and white-violet energy. Generous clear separation and transparent gutters around every individual sprite. Actual clear alpha background outside the sprites. No checkerboard, backdrop, floor, shadows, grid, words, characters, border, or labels. High quality sprite atlas."
+        ]
+      },
+      {
+        "id": "field-enemy-moves",
+        "prompts": [
+          "Use case: stylized-concept. Production VFX animation sprite sheet for the original game Chronoshard: Thirteen Chimes, an original time-travel fantasy RPG. Hand-drawn special effects, expressive ink shapes with hand-painted cel highlights and fine brush fringes, clear at game scale, restrained luminous glows confined close to their marks. True transparent RGBA background, no fake checkerboard, no backdrop, no scene, no poster, no character, no hand, no body, no UI, no captions, no labels, no letters, no boundary lines, no frame icons, no framing circles unless explicitly described as the effect. Orthographic action effects. All visual objects and particles fully inside their own cell with transparent gutters. Draw EXACTLY 4 equally spaced columns in an evenly aligned atlas, one distinct frame centered in every cell, no empty frames. The four columns form a temporal sequence LEFT TO RIGHT, first a small visible anticipation, then growing build, then peak shape, then a reduced but visible dissipating trace. Every row is a separate effect with its own distinct color and silhouette. Place all rows and columns consistently across the canvas. Row numbers below are instructions only.\nExactly 4 columns by 4 rows (16 drawings); square canvas. \nRow 1: Tackle: squashed sea-green impact star and fast rounded jelly motes after a quick low lunge, limited crisp sparks.\nRow 2: Spit Flame: small red-orange spit projectile with a flame tail trailing right, flying left, then a low orange splash of sparks.\nRow 3: Lash: a narrow hooked green and violet thorn-vine sweeps toward the left, small thorn flecks during the follow through.\nRow 4: Pollen Burst: magenta-pink spores dispersed from a golden center into a broad pink and ochre round pollen cloud with many little separate stipple grains."
+        ]
+      },
+      {
+        "id": "forest-enemy-moves",
+        "prompts": [
+          "Use case: stylized-concept. Production VFX animation sprite sheet for the original game Chronoshard: Thirteen Chimes, an original time-travel fantasy RPG. Hand-drawn special effects, expressive ink shapes with hand-painted cel highlights and fine brush fringes, clear at game scale, restrained luminous glows confined close to their marks. True transparent RGBA background, no fake checkerboard, no backdrop, no scene, no poster, no character, no hand, no body, no UI, no captions, no labels, no letters, no boundary lines, no frame icons, no framing circles unless explicitly described as the effect. Orthographic action effects. All visual objects and particles fully inside their own cell with transparent gutters. Draw EXACTLY 4 equally spaced columns in an evenly aligned atlas, one distinct frame centered in every cell, no empty frames. The four columns form a temporal sequence LEFT TO RIGHT, first a small visible anticipation, then growing build, then peak shape, then a reduced but visible dissipating trace. Every row is a separate effect with its own distinct color and silhouette. Place all rows and columns consistently across the canvas. Row numbers below are instructions only.\nExactly 4 columns by 4 rows (16 drawings); square canvas. \nRow 1: Bite: two curved ivory tooth arcs snap shut around a brief crimson spark, small angled fang silhouette and minimal debris, no mouth or creature.\nRow 2: Spirit Flare: cyan and white candle-shaped spirit bolt blooms upward and outward into a luminous star, wispy tail toward the lower right.\nRow 3: Stone Fist: forceful staggered slate chunks gathering into a fist-like rock impact with ochre dust and a wide pale contact flash, no character.\nRow 4: Quake: ochre brown rippling horizontal ground impact, split angular rock plates and stone jets at peak, isolated cracks drawn as floating VFX, no continuous terrain."
+        ]
+      },
+      {
+        "id": "shrine-and-machine-moves",
+        "prompts": [
+          "Use case: stylized-concept. Production VFX animation sprite sheet for the original game Chronoshard: Thirteen Chimes, an original time-travel fantasy RPG. Hand-drawn special effects, expressive ink shapes with hand-painted cel highlights and fine brush fringes, clear at game scale, restrained luminous glows confined close to their marks. True transparent RGBA background, no fake checkerboard, no backdrop, no scene, no poster, no character, no hand, no body, no UI, no captions, no labels, no letters, no boundary lines, no frame icons, no framing circles unless explicitly described as the effect. Orthographic action effects. All visual objects and particles fully inside their own cell with transparent gutters. Draw EXACTLY 4 equally spaced columns in an evenly aligned atlas, one distinct frame centered in every cell, no empty frames. The four columns form a temporal sequence LEFT TO RIGHT, first a small visible anticipation, then growing build, then peak shape, then a reduced but visible dissipating trace. Every row is a separate effect with its own distinct color and silhouette. Place all rows and columns consistently across the canvas. Row numbers below are instructions only.\nExactly 4 columns by 4 rows (16 drawings); square canvas. \nRow 1: Moss Regrowth: bright fern-green luminous growth springs from a small stone chip, spiral emerald leaves and gentle golden green spores.\nRow 2: Drill Arm: tight copper and rust-colored conical drill motion spirals aimed left, with a scattering of metallic orange sparks at impact, no robot.\nRow 3: Laser Sweep: vivid red and coral beam sweeps across a short broad downward diagonal arc, concentrated bright inner white line, few sparks.\nRow 4: Null Ray: small hard-edged purple black ray aimed left with a dark center, bright violet rim and angular magenta interference motes."
+        ]
+      },
+      {
+        "id": "sentinel-and-hollow-moves",
+        "prompts": [
+          "Use case: stylized-concept. Production VFX animation sprite sheet for the original game Chronoshard: Thirteen Chimes, an original time-travel fantasy RPG. Hand-drawn special effects, expressive ink shapes with hand-painted cel highlights and fine brush fringes, clear at game scale, restrained luminous glows confined close to their marks. True transparent RGBA background, no fake checkerboard, no backdrop, no scene, no poster, no character, no hand, no body, no UI, no captions, no labels, no letters, no boundary lines, no frame icons, no framing circles unless explicitly described as the effect. Orthographic action effects. All visual objects and particles fully inside their own cell with transparent gutters. Draw EXACTLY 4 equally spaced columns in an evenly aligned atlas, one distinct frame centered in every cell, no empty frames. The four columns form a temporal sequence LEFT TO RIGHT, first a small visible anticipation, then growing build, then peak shape, then a reduced but visible dissipating trace. Every row is a separate effect with its own distinct color and silhouette. Place all rows and columns consistently across the canvas. Row numbers below are instructions only.\nExactly 4 columns by 4 rows (16 drawings); square canvas. \nRow 1: Crush: downward heavy steel blue impact with bold amber fragments and a flattened angular orange force burst.\nRow 2: Overload: aggressive jagged electric white and molten yellow bolt fork around a dark gray core, radial multi-branch electric blast.\nRow 3: Rend: diagonal violent glossy magenta-purple claw tear with three distinct crescent streaks and ink-like purple flecks, no claw or figure.\nRow 4: Time Fracture: violet-blue hairline clockwork cracks expand across a small ring into floating fractured glass clock segments with light-blue frozen shards, no numerals."
+        ]
+      },
+      {
+        "id": "hollow-moves-and-tonics",
+        "prompts": [
+          "Hand-drawn cel-animation VFX sprite atlas for fantasy RPG Chronoshard. Transparent square PNG, EXACT 4×4 grid of sixteen completely isolated compact sprites. Each cell has a large gap of pure transparent pixels on all four sides. No text, background, dividers, ground, stage, characters or icons. Four rows, each showing one effect in order: very small initial frame, building motion, clear peak, reduced fading sparks. Row 1 Unmake, sharp deep violet imploding star with a few lilac shards collapsing inwards. Row 2 Devour Hours, magenta and purple vortex with bronze clock hands and gold slivers being sucked toward its black core. Row 3 Tonic, small luminous mint green healing dew and one gentle green star. Row 4 Hi-Tonic, vivid emerald healing fan, gold star tips and rising jade droplets. Fine hand-drawn brush contours, cel accents, dynamic clean silhouette, alpha=0 outside every effect. At peak each effect fills only about 68% width and height of its cell for safe trimming. All four frames of every effect centered on their cell with broad gutters."
+        ]
+      },
+      {
+        "id": "restoration-items",
+        "prompts": [
+          "Use case: stylized-concept. Production VFX animation sprite sheet for the original game Chronoshard: Thirteen Chimes, an original time-travel fantasy RPG. Hand-drawn special effects, expressive ink shapes with hand-painted cel highlights and fine brush fringes, clear at game scale, restrained luminous glows confined close to their marks. True transparent RGBA background, no fake checkerboard, no backdrop, no scene, no poster, no character, no hand, no body, no UI, no captions, no labels, no letters, no boundary lines, no frame icons, no framing circles unless explicitly described as the effect. Orthographic action effects. All visual objects and particles fully inside their own cell with transparent gutters. Draw EXACTLY 4 equally spaced columns in an evenly aligned atlas, one distinct frame centered in every cell, no empty frames. The four columns form a temporal sequence LEFT TO RIGHT, first a small visible anticipation, then growing build, then peak shape, then a reduced but visible dissipating trace. Every row is a separate effect with its own distinct color and silhouette. Place all rows and columns consistently across the canvas. Row numbers below are instructions only.\nExactly 4 columns by 3 rows (12 drawings); landscape canvas. \nRow 1: Ether: pale blue potion shimmer, crystalline turquoise droplets gathering into a luminous cobalt diamond and flowing up in little white sparks.\nRow 2: Revival Seed: small amber seed of light opens into green shoots and a radiant cream-gold revival burst, then a delicate floating leaf and gold spark.\nRow 3: Elixir: radiant golden full-party restoration, wide rising sun-white and amber halo, two nested golden rings and emerald-violet spectral glints, then a thinning clean crown of sparks."
+        ]
+      },
+      {
+        "id": "kael-side-movement",
+        "prompts": [
+          "Create a NEW animation sprite strip for the exact playable RPG hero in reference image 1. Reference image 1 is the existing on-model character sheet and authoritative for identity, costume, hand-drawn ink and gouache finish, palette, head-to-body proportions and head size. Match the existing art closely. Draw exactly six full-body sprites in an evenly spaced 3-column by 2-row grid with generous transparent gutters. All six are strict SIDE PROFILE like a 2D side-scrolling RPG: nose and both toe tips point directly along horizontal travel, only the near facial eye visible, shoulders and hips in profile, no foreshortened camera-facing boots. Row 1 every sprite faces RIGHT. Row 2 every sprite faces LEFT. In each row column 1 relaxed side-profile idle, feet nearly aligned under the body; column 2 passing walk pose with the near leg plainly ahead and far leg behind, far arm forward; column 3 the exact opposite stride with far leg plainly ahead and near leg behind, near arm forward. Same relaxed speed and posture in the second and third cell, grounded contact foot on a common baseline, arms visibly swinging naturally. Distinct leg layering, contrast the boots and trousers of the far sides against near sides so the cycle reads. Feet, hair tips, and tools stay entirely within their own cells. Same body proportions, character height, costume and accessories across these six new drawings. Rich small-scale cel shading with warm brass highlights, confident contour, and the same quality as reference. Each movement frame must show clear separation between feet, no static slides. Real PNG alpha outside figures; zero background texture, no floor, line, shadow, guides, checkerboards, captions, motion trails, borders, text, or other objects. Kael is the copper-red spiky-haired swordsman with a cobalt tunic, cream sleeve cuffs, brown leather strap and belt, ochre gold trim, brown trousers and cuffed leather boots. Carry his sheathed sword at the hip as in the first two rows of reference, hands relaxed and empty."
+        ]
+      },
+      {
+        "id": "bram-side-movement",
+        "prompts": [
+          "Create a NEW animation sprite strip for the exact playable RPG hero in reference image 1. Reference image 1 is the existing on-model character sheet and authoritative for identity, costume, hand-drawn ink and gouache finish, palette, head-to-body proportions and head size. Match the existing art closely. Draw exactly six full-body sprites in an evenly spaced 3-column by 2-row grid with generous transparent gutters. All six are strict SIDE PROFILE like a 2D side-scrolling RPG: nose and both toe tips point directly along horizontal travel, only the near facial eye visible, shoulders and hips in profile, no foreshortened camera-facing boots. Row 1 every sprite faces RIGHT. Row 2 every sprite faces LEFT. In each row column 1 relaxed side-profile idle, feet nearly aligned under the body; column 2 passing walk pose with the near leg plainly ahead and far leg behind, far arm forward; column 3 the exact opposite stride with far leg plainly ahead and near leg behind, near arm forward. Same relaxed speed and posture in the second and third cell, grounded contact foot on a common baseline, arms visibly swinging naturally. Distinct leg layering, contrast the boots and trousers of the far sides against near sides so the cycle reads. Feet, hair tips, and tools stay entirely within their own cells. Same body proportions, character height, costume and accessories across these six new drawings. Rich small-scale cel shading with warm brass highlights, confident contour, and the same quality as reference. Each movement frame must show clear separation between feet, no static slides. Real PNG alpha outside figures; zero background texture, no floor, line, shadow, guides, checkerboards, captions, motion trails, borders, text, or other objects. Bram is the brown-skinned tinkerer with thick dark brown hair, work cap topped by brass goggles, mustard rolled-sleeve shirt, dark slate patched trousers, big brown boots and a red rag at his belt. Keep his gray adjustable wrench safely held close to his body in one hand, with small natural swing and the other arm counter-swinging."
+        ]
+      },
+      {
+        "id": "lyra-side-movement",
+        "prompts": [
+          "Create a NEW animation sprite strip for the exact playable RPG hero in reference image 1. Reference image 1 is the existing on-model character sheet and authoritative for identity, costume, hand-drawn ink and gouache finish, palette, head-to-body proportions and head size. Match the existing art closely. Draw exactly six full-body sprites in an evenly spaced 3-column by 2-row grid with generous transparent gutters. All six are strict SIDE PROFILE like a 2D side-scrolling RPG: nose and both toe tips point directly along horizontal travel, only the near facial eye visible, shoulders and hips in profile, no foreshortened camera-facing boots. Row 1 every sprite faces RIGHT. Row 2 every sprite faces LEFT. In each row column 1 relaxed side-profile idle, feet nearly aligned under the body; column 2 passing walk pose with the near leg plainly ahead and far leg behind, far arm forward; column 3 the exact opposite stride with far leg plainly ahead and near leg behind, near arm forward. Same relaxed speed and posture in the second and third cell, grounded contact foot on a common baseline, arms visibly swinging naturally. Distinct leg layering, contrast the boots and trousers of the far sides against near sides so the cycle reads. Feet, hair tips, and tools stay entirely within their own cells. Same body proportions, character height, costume and accessories across these six new drawings. Rich small-scale cel shading with warm brass highlights, confident contour, and the same quality as reference. Each movement frame must show clear separation between feet, no static slides. Real PNG alpha outside figures; zero background texture, no floor, line, shadow, guides, checkerboards, captions, motion trails, borders, text, or other objects. Lyra is the forest warden with long pale ice-blue wavy hair and braid, purple gold-edged forest tunic and cape, cream sleeves, dark purple trousers, brown cuffed boots, and wood staff with blue diamond. Carry staff comfortably upright close to the body in the same hand in all frames; give her hair and cape a small, natural trailing sway."
+        ]
+      },
+      {
+        "id": "ashvale-kid-side-movement",
+        "prompts": [
+          "Draw a NEW hand-drawn animation sprite sheet of the same child from reference image 1, which is an identity and style reference. Match the original exact face, spiky honey-blond hair, costume, proportions, palette, warm light and textured cel-painted contours. Exactly 3 columns by 2 rows of six full-body sprites, generously isolated with padded gutters. Row 1 always right-facing complete side profile. Row 2 always left-facing complete side profile. In each row, column 1 is relaxed stationary idle, column 2 a walk stride with the NEAR foot forward and far hand forward, column 3 a distinct opposite walk stride with FAR foot forward and near hand forward. Darken far-side limbs slightly so the alternate feet can be clearly read. Eyes and toes point fully along direction of travel. No stepping towards the viewer. Match scale between frames and keep the lowest foot on a common baseline. The smallest silhouette is still crisp and clearly readable. Actual PNG transparency, no checkerboard, floor, shadows, props, text, or grid lines. Keep the bright red button-front shirt, brown belt, violet-indigo knee-length trousers, lighter purple cuffs and brown ankle boots from the Ashvale Kid reference. Hands are empty."
+        ]
+      },
+      {
+        "id": "elderwood-child-side-movement",
+        "prompts": [
+          "Draw a NEW hand-drawn animation sprite sheet of the same child from reference image 1, which is an identity and style reference. Match the original exact face, spiky honey-blond hair, costume, proportions, palette, warm light and textured cel-painted contours. Exactly 3 columns by 2 rows of six full-body sprites, generously isolated with padded gutters. Row 1 always right-facing complete side profile. Row 2 always left-facing complete side profile. In each row, column 1 is relaxed stationary idle, column 2 a walk stride with the NEAR foot forward and far hand forward, column 3 a distinct opposite walk stride with FAR foot forward and near hand forward. Darken far-side limbs slightly so the alternate feet can be clearly read. Eyes and toes point fully along direction of travel. No stepping towards the viewer. Match scale between frames and keep the lowest foot on a common baseline. The smallest silhouette is still crisp and clearly readable. Actual PNG transparency, no checkerboard, floor, shadows, props, text, or grid lines. Keep the darker brick-red tunic, blue-gray trousers and Elderwood child's distinctive pale flax sash tied across the waist with ends hanging down, as shown in the reference. Hands are empty."
+        ]
+      },
+      {
+        "id": "gloops-side-movement",
+        "prompts": [
+          "Draw a NEW hand-drawn overworld locomotion sprite atlas for the two original RPG monsters in reference images 1 and 2. Inputs are identity and style references, not edit targets. Match their exact existing painted contour, palette, body design and proportions. Exactly 3 columns by 2 rows of independent isolated cutouts, landscape, six cells. All six monsters travel SCREEN LEFT and face left in clean side profile or the same left-facing three-quarter silhouette as the references. Row 1 contains only the creature in reference 1, repeated in three distinct sequential movement frames. Row 2 similarly contains only the creature in reference 2. Use left-right arm/leg or shape changes that loop through the three listed poses. Same zoom per row and stable center; for ground creatures the lowest supporting foot or contact area is at a common baseline. Intentional generous transparent gutters on all sides of each cell, including wing or weapon tips. True transparency with alpha=0 between sprites, no floor, cast shadow, sheet keylines, borders, white backdrop, checkerboard, typography, projectile, trails, labels or visual effects. Row 1: green jelly Gloop, no flame. Row 2: burnt-orange Ember Gloop, yellow-orange flame tuft slants backward as it moves. For each row show (1) low wide gathered squash with eyes looking left, (2) tall forward-leaning spring/extension, (3) settling forward glide with jelly cheeks, lower dome and trailing back edge. Keep the same eye proportions, the glossy surface and internal bubbles."
+        ]
+      },
+      {
+        "id": "forest-side-movement",
+        "prompts": [
+          "Draw a NEW hand-drawn overworld locomotion sprite atlas for the two original RPG monsters in reference images 1 and 2. Inputs are identity and style references, not edit targets. Match their exact existing painted contour, palette, body design and proportions. Exactly 3 columns by 2 rows of independent isolated cutouts, landscape, six cells. All six monsters travel SCREEN LEFT and face left in clean side profile or the same left-facing three-quarter silhouette as the references. Row 1 contains only the creature in reference 1, repeated in three distinct sequential movement frames. Row 2 similarly contains only the creature in reference 2. Use left-right arm/leg or shape changes that loop through the three listed poses. Same zoom per row and stable center; for ground creatures the lowest supporting foot or contact area is at a common baseline. Intentional generous transparent gutters on all sides of each cell, including wing or weapon tips. True transparency with alpha=0 between sprites, no floor, cast shadow, sheet keylines, borders, white backdrop, checkerboard, typography, projectile, trails, labels or visual effects. Row 1: violet Thornling with magenta petal frill, toothy face, ochre eyes and compact green thorn-vine roots. Show (1) rear root supporting its body with leading root lifted, (2) leading root planted and head shifted forward, (3) rear support pulling forward while the other root supports it. Locomotion under the body, its bite and lash unused. Row 2: dark violet Duskbat with purple wing membrane, pointed ears and golden eyes. Show (1) wings raised, (2) wings out in full traveling glide, (3) wings swept below body. Never show wings intersecting adjoining cells."
+        ]
+      },
+      {
+        "id": "wisps-side-movement",
+        "prompts": [
+          "Draw a NEW hand-drawn overworld locomotion sprite atlas for the two original RPG monsters in reference images 1 and 2. Inputs are identity and style references, not edit targets. Match their exact existing painted contour, palette, body design and proportions. Exactly 3 columns by 2 rows of independent isolated cutouts, landscape, six cells. All six monsters travel SCREEN LEFT and face left in clean side profile or the same left-facing three-quarter silhouette as the references. Row 1 contains only the creature in reference 1, repeated in three distinct sequential movement frames. Row 2 similarly contains only the creature in reference 2. Use left-right arm/leg or shape changes that loop through the three listed poses. Same zoom per row and stable center; for ground creatures the lowest supporting foot or contact area is at a common baseline. Intentional generous transparent gutters on all sides of each cell, including wing or weapon tips. True transparency with alpha=0 between sprites, no floor, cast shadow, sheet keylines, borders, white backdrop, checkerboard, typography, projectile, trails, labels or visual effects. Row 1: Elder Wisp, pale cyan flame, warm-white pointed face core with dark eyes and cyan trailing plume to the right. Row 2: Void Wisp, deep violet flame, black-violet hollow with white eyes and magenta trailing plume to the right. For both, make a hovering locomotion cycle: (1) compact S-curved tail leaning left, (2) longer narrow streaming right tail as face leads, (3) shorter raised curling tail returning to initial shape. Keep luminous painted flame near its own silhouette, with a few very close motes."
+        ]
+      },
+      {
+        "id": "robots-side-movement",
+        "prompts": [
+          "Draw a NEW hand-drawn overworld locomotion sprite atlas for the two original RPG monsters in reference images 1 and 2. Inputs are identity and style references, not edit targets. Match their exact existing painted contour, palette, body design and proportions. Exactly 3 columns by 2 rows of independent isolated cutouts, landscape, six cells. All six monsters travel SCREEN LEFT and face left in clean side profile or the same left-facing three-quarter silhouette as the references. Row 1 contains only the creature in reference 1, repeated in three distinct sequential movement frames. Row 2 similarly contains only the creature in reference 2. Use left-right arm/leg or shape changes that loop through the three listed poses. Same zoom per row and stable center; for ground creatures the lowest supporting foot or contact area is at a common baseline. Intentional generous transparent gutters on all sides of each cell, including wing or weapon tips. True transparency with alpha=0 between sprites, no floor, cast shadow, sheet keylines, borders, white backdrop, checkerboard, typography, projectile, trails, labels or visual effects. Row 1: squat russet oxidized Rustbot, amber single eye, conical drill facing left, armored caterpillar treads. Drill stays lowered and retracted; movement cycle shows (1) level roll (2) lightly nose-down compression and sprocket turn (3) lightly nose-up recoil with advancing tread links. Row 2: tall blue-gray plated Sentinel with ochre-trimmed pauldrons, split yellow visor, massive arms, and heavy articulated boots. Show (1) leftward near-leg forward heavy step and far arm forward, (2) centered weight transfer where the free foot passes the supporting foot, (3) leftward opposite stride with FAR leg forward and NEAR arm forward. Arms stay down in a purposeful walk and its shape and visor stay on model."
+        ]
+      },
+      {
+        "id": "ashvale-households-side-movement",
+        "prompts": [
+          "Create a NEW hand-drawn NPC locomotion atlas for two original Chronoshard RPG noncombat characters, consistent with the two attached image references. Image 1 is the first subject reference and image 2 the second subject reference, exact for character identity, existing costume, body shape, palette, face and painted ink contours. The reference sheets show front views, but the new sheet has strict 2D SIDE PROFILES: noses and boots pointing to the left or right edge, only the near eye visible, no front-view or camera-facing limbs. Precise grid of EXACTLY three columns by four rows, twelve fully isolated individual full-body cutout sprites, on a portrait canvas. Rows 1 and 2 contain subject 1 only. Rows 3 and 4 contain subject 2 only. Rows 1 and 3 face right. Rows 2 and 4 face left. In every row, column 1 is a relaxed stationary idle, column 2 is a walk stride with the NEAR foot forward and FAR arm forward, column 3 is the opposite stride with the FAR foot forward and NEAR arm forward. Make opposite footsteps unmistakable through limb overlap and slight far-side shade. Feet fully visible with matching contact baseline, no scenery or new props. Maintain matched on-model height within each character and broad clear gutters around every isolated silhouette, including clothing and hair. Actual alpha=0 transparent background, no checkerboard, no opaque tint, no floor, cast shadows, grid, sheet border, extraneous marks, typography, labels, action trails or numbering. Use the original finished hand-drawn gouache/cel rendering and warm light from the references. Subject 1 is Mom, chestnut shoulder-length hair, muted rose top, dark berry ankle-length skirt, brown practical shoes. Subject 2 is Sleepy Gear Innkeeper, long auburn hair, white gathered apron over slate-violet ankle-length dress. Skirt and apron fold and sway with alternating footsteps, with both boots readable below their hems."
+        ]
+      },
+      {
+        "id": "merchant-and-fenn-side-movement",
+        "prompts": [
+          "Create a NEW hand-drawn NPC locomotion atlas for two original Chronoshard RPG noncombat characters, consistent with the two attached image references. Image 1 is the first subject reference and image 2 the second subject reference, exact for character identity, existing costume, body shape, palette, face and painted ink contours. The reference sheets show front views, but the new sheet has strict 2D SIDE PROFILES: noses and boots pointing to the left or right edge, only the near eye visible, no front-view or camera-facing limbs. Precise grid of EXACTLY three columns by four rows, twelve fully isolated individual full-body cutout sprites, on a portrait canvas. Rows 1 and 2 contain subject 1 only. Rows 3 and 4 contain subject 2 only. Rows 1 and 3 face right. Rows 2 and 4 face left. In every row, column 1 is a relaxed stationary idle, column 2 is a walk stride with the NEAR foot forward and FAR arm forward, column 3 is the opposite stride with the FAR foot forward and NEAR arm forward. Make opposite footsteps unmistakable through limb overlap and slight far-side shade. Feet fully visible with matching contact baseline, no scenery or new props. Maintain matched on-model height within each character and broad clear gutters around every isolated silhouette, including clothing and hair. Actual alpha=0 transparent background, no checkerboard, no opaque tint, no floor, cast shadows, grid, sheet border, extraneous marks, typography, labels, action trails or numbering. Use the original finished hand-drawn gouache/cel rendering and warm light from the references. Subject 1 is the General Store Merchant, warm copper-brown skin, brown flat cap on short dark hair, cinnamon shirt with sleeves rolled, dark brown trousers, thick belt and pouch. Subject 2 is Old Fenn, older man with gray temples, round eyeglasses, moss-olive sweater with the shirt collar peeking out, tan trousers, brown shoes and a slightly shorter relaxed step. Do not exchange clothes or accessories between subjects."
+        ]
+      },
+      {
+        "id": "watchman-and-moira-side-movement",
+        "prompts": [
+          "Create a NEW hand-drawn NPC locomotion atlas for two original Chronoshard RPG noncombat characters, consistent with the two attached image references. Image 1 is the first subject reference and image 2 the second subject reference, exact for character identity, existing costume, body shape, palette, face and painted ink contours. The reference sheets show front views, but the new sheet has strict 2D SIDE PROFILES: noses and boots pointing to the left or right edge, only the near eye visible, no front-view or camera-facing limbs. Precise grid of EXACTLY three columns by four rows, twelve fully isolated individual full-body cutout sprites, on a portrait canvas. Rows 1 and 2 contain subject 1 only. Rows 3 and 4 contain subject 2 only. Rows 1 and 3 face right. Rows 2 and 4 face left. In every row, column 1 is a relaxed stationary idle, column 2 is a walk stride with the NEAR foot forward and FAR arm forward, column 3 is the opposite stride with the FAR foot forward and NEAR arm forward. Make opposite footsteps unmistakable through limb overlap and slight far-side shade. Feet fully visible with matching contact baseline, no scenery or new props. Maintain matched on-model height within each character and broad clear gutters around every isolated silhouette, including clothing and hair. Actual alpha=0 transparent background, no checkerboard, no opaque tint, no floor, cast shadows, grid, sheet border, extraneous marks, typography, labels, action trails or numbering. Use the original finished hand-drawn gouache/cel rendering and warm light from the references. Subject 1 is the Clocktower Watchman, short chestnut hair, olive tunic with brass watch badge and diagonal brown leather shoulder strap, brown trousers and boots. Subject 2 is Elder Moira, elderly sage with a bald crown and white hair at the sides, clear white beard, moss-green full-length robe with gold-olive trim, comfortable short steps and gently swinging hands, toes visible under the robe. Preserve the exact faces and outfits."
+        ]
+      },
+      {
+        "id": "hearthkeeper-and-herbalist-side-movement",
+        "prompts": [
+          "Create a NEW hand-drawn NPC locomotion atlas for two original Chronoshard RPG noncombat characters, consistent with the two attached image references. Image 1 is the first subject reference and image 2 the second subject reference, exact for character identity, existing costume, body shape, palette, face and painted ink contours. The reference sheets show front views, but the new sheet has strict 2D SIDE PROFILES: noses and boots pointing to the left or right edge, only the near eye visible, no front-view or camera-facing limbs. Precise grid of EXACTLY three columns by four rows, twelve fully isolated individual full-body cutout sprites, on a portrait canvas. Rows 1 and 2 contain subject 1 only. Rows 3 and 4 contain subject 2 only. Rows 1 and 3 face right. Rows 2 and 4 face left. In every row, column 1 is a relaxed stationary idle, column 2 is a walk stride with the NEAR foot forward and FAR arm forward, column 3 is the opposite stride with the FAR foot forward and NEAR arm forward. Make opposite footsteps unmistakable through limb overlap and slight far-side shade. Feet fully visible with matching contact baseline, no scenery or new props. Maintain matched on-model height within each character and broad clear gutters around every isolated silhouette, including clothing and hair. Actual alpha=0 transparent background, no checkerboard, no opaque tint, no floor, cast shadows, grid, sheet border, extraneous marks, typography, labels, action trails or numbering. Use the original finished hand-drawn gouache/cel rendering and warm light from the references. Subject 1 is the Hearthkeeper, whose long auburn hair and slate-violet dress appear under a rustic cream shawl and a cream embroidered apron. Subject 2 is the Herbalist, dusty purple hood partially framing their face, layered plum and lavender robe with plum trim and small belt herb pouch with sprigs. Preserve the shawl and hood of their respective characters, consistent hem lengths and clean readable boots."
+        ]
+      },
+      {
+        "id": "woodcutter-and-unit-7-side-movement",
+        "prompts": [
+          "Create a NEW hand-drawn NPC locomotion atlas for two original Chronoshard RPG noncombat characters, consistent with the two attached image references. Image 1 is the first subject reference and image 2 the second subject reference, exact for character identity, existing costume, body shape, palette, face and painted ink contours. The reference sheets show front views, but the new sheet has strict 2D SIDE PROFILES: noses and boots pointing to the left or right edge, only the near eye visible, no front-view or camera-facing limbs. Precise grid of EXACTLY three columns by four rows, twelve fully isolated individual full-body cutout sprites, on a portrait canvas. Rows 1 and 2 contain subject 1 only. Rows 3 and 4 contain subject 2 only. Rows 1 and 3 face right. Rows 2 and 4 face left. In every row, column 1 is a relaxed stationary idle, column 2 is a walk stride with the NEAR foot forward and FAR arm forward, column 3 is the opposite stride with the FAR foot forward and NEAR arm forward. Make opposite footsteps unmistakable through limb overlap and slight far-side shade. Feet fully visible with matching contact baseline, no scenery or new props. Maintain matched on-model height within each character and broad clear gutters around every isolated silhouette, including clothing and hair. Actual alpha=0 transparent background, no checkerboard, no opaque tint, no floor, cast shadows, grid, sheet border, extraneous marks, typography, labels, action trails or numbering. Use the original finished hand-drawn gouache/cel rendering and warm light from the references. Subject 1 is the Woodcutter, short brown hair, warm tan skin, olive work shirt with short cuffs, dark leather work gloves, brown trousers, plain belt and brown boots, no hat or handheld tools. Subject 2 is Unit-7, humanoid toaster service robot, rounded steel-blue head with round dark brass-rim goggles, gray-blue squared torso with amber rectangular readout, slate metal arms and legs with visible joints and chunky flat feet. Alternating robot gait is angular and deliberate, original toaster design is sacred."
+        ]
+      },
+      {
+        "id": "golem-side-movement",
+        "prompts": [
+          "Create a NEW hand-drawn horizontal locomotion animation atlas of exactly the same original Chronoshard boss in reference image 1. Input is the identity and style reference. Match its existing scale, silhouette, palette and painted linework closely. Exactly 2 columns by 2 rows of four different animation cels. All four face screen LEFT in a strong lateral three-quarter profile, leftward travel. Broad transparent gutters around each individual full-body silhouette, no overlap between cells. Same scale and proportions in every frame. Clean transparent RGBA background with alpha=0 outside each cutout; no checkerboard, no floor, no cast shadows, no borders, no gridlines, no text, no backdrop, no outgoing attack, no impact flash. Mossback Golem is a heavy squat gray-green rock giant, broad mossy shoulders, jagged fern tufts, gray ochre boulder plates and large rectangular stone fists, green eyes. Both fists hang down and swing slightly through a lumbering walk. Row 1 column 1 near foot reaches ahead left and far arm swings forward; row 1 column 2 weight settles over lead foot and trailing foot lifts. Row 2 column 1 far foot reaches ahead left and near arm swings forward; row 2 column 2 body rises over supporting far foot with the near foot passing. Feet touch the same ground baseline, all stone limbs and moss tips fully in cell, no debris or ground."
+        ]
+      },
+      {
+        "id": "hollow-king-side-movement",
+        "prompts": [
+          "Create a NEW hand-drawn horizontal locomotion animation atlas of exactly the same original Chronoshard boss in reference image 1. Input is the identity and style reference. Match its existing scale, silhouette, palette and painted linework closely. Exactly 2 columns by 2 rows of four different animation cels. All four face screen LEFT in a strong lateral three-quarter profile, leftward travel. Broad transparent gutters around each individual full-body silhouette, no overlap between cells. Same scale and proportions in every frame. Clean transparent RGBA background with alpha=0 outside each cutout; no checkerboard, no floor, no cast shadows, no borders, no gridlines, no text, no backdrop, no outgoing attack, no impact flash. The exact Hollow King has a broken bronze crown atop a tattered dark violet hood, shadow-black face with narrow magenta eyes, antique bronze clockwork shoulders and trim, long torn cape and a few violet time shards held close to his body. Glides LEFT off the ground without feet. In row-major order 1) head and torso lean softly into motion with robe swept right, claws down; 2) crest rises and trailing hem unfurls right in large soft wave; 3) crest dips and hem narrows and banks right; 4) relaxed returning glide silhouette, flowing mantle settles. Subtle variations of a continuous stable motion, identical crown and hood, no teleport, no extra objects. Keep any small existing time shards contained within each sprite."
+        ]
+      },
+      {
+        "id": "chest",
+        "prompts": [
+          "Create a new transparent two-frame game sprite sheet for the ordinary loot chest in Chronoshard: Thirteen Chimes, a hand-drawn fantasy time-travel RPG. Draw the exact same compact low wooden chest in two states, one large isolated sprite per cell. EXACTLY two equal square cells in ONE horizontal row on a wide canvas, with substantial transparent space between the sprites and around every edge. Left cell: closed chest with the hinged lid shut, aged warm chestnut-oak planks, dark wood plank separations, aged golden brass edge bands, a small centered brass clasp and clean dark outline. Right cell: the same chest fully open on its rear hinge, lid raised by about 95 degrees, readable open empty dark wood interior, exposed underside with the same brass hardware, same base, same viewpoint, same on-screen scale and row of feet. Identical fitted corners, wood color, and base geometry. Broad front visible, a narrow exposed right side, slightly elevated 3/4 front view suitable for a small overworld billboard. Art direction: polished hand-drawn game sprite, expressive fine ink contour, graphic gouache cel shading, warm gold catches, rich brown shadows, enough simple high-contrast forms to remain readable at small gameplay scale. No pedestal, scene, ground, cast shadow, sparkles, loot, outlines around cells, text, labels, extra objects, or baked checkerboard. Actual PNG alpha=0 outside the silhouettes. Upper tip of raised lid fully visible well inside its own frame."
+        ]
+      }
+    ]
+  }
+}

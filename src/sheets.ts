@@ -1,14 +1,18 @@
-// ===== Chronoshard sprite sheets: the drawn characters, enemies, props and effects in sprite-sheets/ =====
-// manifest.json lists each sheet: its grid, frame names and a pivot (the feet for walkers, the centre for flyers
+// ===== Chronoshard sprite sheets: the drawn characters, enemies, props and effects =====
+// The game loads sprite-sheets-webp/, made from the PNG masters in sprite-sheets/ by `npm run sprites`: WebP, each sheet
+// downscaled as far as its on-screen size allows (its `scale`). manifest.json lists each sheet: its grid, frame names and a pivot (the feet for walkers, the centre for flyers
 // and effects). Frames are cropped to their art on load and keep their pivot, so drawing code places a frame by
 // where its feet (or centre) should be. Each sheet has its own generated-sprite fallback while it loads.
 import { flipCanvas, mkCanvas, rotCanvas, silhouette } from './pixel.js';
 
-interface ManifestEntry { name: string; file: string; columns: number; rows: number; pivot: { x: number; y: number }; frames: string[]; gameId?: string; itemId?: string }
+interface ManifestEntry { name: string; file: string; columns: number; rows: number; pivot: { x: number; y: number }; frames: string[]; gameId?: string; itemId?: string;
+  /** sheet pixels per pixel of the drawn original; frameSize and pivots are given in original pixels */
+  scale?: number }
 interface Manifest { frameSize: { width: number; height: number }; collections: { characters: ManifestEntry[]; enemies: ManifestEntry[]; effects: ManifestEntry[]; props?: ManifestEntry[] } }
 /** one frame cropped to its art: px, py is the pivot inside the crop; top is the first row with art */
 export interface SheetFrame { c: HTMLCanvasElement; px: number; py: number; top: number }
-export interface Sheet { name: string; id: string; frames: SheetFrame[]; names: string[] }
+/** scale: sheet pixels per pixel of the drawn original (code sized for the originals divides by it) */
+export interface Sheet { name: string; id: string; frames: SheetFrame[]; names: string[]; scale: number }
 interface SheetAsset { entry: ManifestEntry; url: string; requested?: boolean; sheet?: Sheet }
 
 /** dialogue speaker names that don't match a sheet's name exactly */
@@ -17,7 +21,8 @@ const SPEAKER_ALIAS: Record<string, string> = { Kid: 'Ashvale Kid', Child: 'Elde
 const NPC_ALIAS: Record<string, string> = { lyraNpc: 'lyra' };
 /** how tall Kael's standing frame is drawn, in art pixels; every character shares the same scale */
 const HERO_HEIGHT = 36;
-let FW = 384, FH = 384;
+/** a frame's size in original pixels (manifest frameSize) */
+let FW0 = 384, FH0 = 384;
 
 export const Sheets = {
   ready: false,
@@ -27,11 +32,11 @@ export const Sheets = {
   charScale: 0.1,
   variants: new Map<string, SheetFrame>(),
   /** Read the index once. Gameplay requests only the sprites and effects it encounters. */
-  async load(base = 'sprite-sheets/'): Promise<void> {
+  async load(base = 'sprite-sheets-webp/'): Promise<void> {
     try {
       const res = await fetch(base + 'manifest.json'); if (!res.ok) return;
       const m = await res.json() as Manifest, C = m.collections;
-      FW = m.frameSize.width; FH = m.frameSize.height;
+      FW0 = m.frameSize.width; FH0 = m.frameSize.height;
       const asset = (entry: ManifestEntry): SheetAsset => ({ entry, url: base + entry.file });
       for (const e of C.characters) {
         const a = asset(e);
@@ -89,6 +94,7 @@ async function loadSheet(asset: SheetAsset): Promise<void> {
  * empty margins are read.
  */
 function cropSheet(e: ManifestEntry, bmp: ImageBitmap): Sheet {
+  const k = e.scale ?? 1, FW = FW0 * k, FH = FH0 * k, pivot = { x: e.pivot.x * k, y: e.pivot.y * k }; // this sheet's grid
   const scan = document.createElement('canvas'); scan.width = bmp.width; scan.height = bmp.height;
   const g = scan.getContext('2d', { willReadFrequently: true })!; g.drawImage(bmp, 0, 0);
   const W = bmp.width, d = g.getImageData(0, 0, bmp.width, bmp.height).data;
@@ -105,7 +111,7 @@ function cropSheet(e: ManifestEntry, bmp: ImageBitmap): Sheet {
     const minX = Math.max(x0, left - 1), minY = Math.max(y0, top - 1), maxX = Math.min(x0 + FW - 1, right + 1), maxY = Math.min(y0 + FH - 1, bot + 1);
     const [c, cg] = mkCanvas(maxX - minX + 1, maxY - minY + 1);
     cg.drawImage(bmp, minX, minY, c.width, c.height, 0, 0, c.width, c.height);
-    return { c, px: e.pivot.x - (minX - x0), py: e.pivot.y - (minY - y0), top: top - minY };
+    return { c, px: pivot.x - (minX - x0), py: pivot.y - (minY - y0), top: top - minY };
   });
-  return { name: e.name, id: e.gameId || e.itemId || e.name, frames, names: e.frames };
+  return { name: e.name, id: e.gameId || e.itemId || e.name, frames, names: e.frames, scale: k };
 }

@@ -28,11 +28,11 @@ export interface TechOption { t: Tech | DualTech; ok: boolean; label: string; co
 export interface ItemOption { k: ItemId; it: Item; n: number }
 export interface BattleMenu { actor: HeroActor; level: 'main' | 'tech' | 'item' | 'target'; idx: number; sub: number; scroll: number; pending?: PendingCmd; tIdx: number }
 export interface Particle { x: number; y: number; vx: number; vy: number; life: number; color: string; size: number; g?: number; glow?: boolean; delay?: number }
-/** a damage/heal number: x, y where it's drawn the 2D way; gz the ground line of the actor it belongs to (for 3D) */
 /** a drawn effect playing: centred at x, y (2D placement) on an actor whose ground line is gz */
 export interface SheetFx { s: Sheet; x: number; y: number; gz: number; t: number; dur: number }
-/** art pixels per sheet pixel for effects (a 384px frame is about 50 art px across) */
+/** art pixels per pixel of the drawn effect art (a 384px frame is about 50 art px across); divided by a sheet's scale */
 const FX_SCALE = 0.13;
+/** a damage/heal number: x, y where it's drawn the 2D way; gz the ground line of the actor it belongs to (for 3D) */
 export interface Pop { x: number; y: number; s: string; color: string; t: number; gz: number }
 export interface FxLight { x: number; y: number; r: number; c: RGB; life: number; max: number; i: number }
 /** something that can deal damage: an enemy, a hero, or the pooled stats of a dual tech */
@@ -542,7 +542,7 @@ export const Battle = {
     // drawn effect animations: 4 frames (wind-up, build, impact, dissipate) over each effect's duration
     for (const e of this.sheetFx) {
       const p = e.t / e.dur * 4, i = Math.min(3, Math.floor(p)), f = e.s.frames[i], alpha = i === 3 ? Math.max(0, 1 - (p - 3)) : 1;
-      Frame.effects.push({ img: f.c, ...Space.onObject(e.x, e.y, e.gz), px: f.px, py: f.py, scale: FX_SCALE, alpha });
+      Frame.effects.push({ img: f.c, ...Space.onObject(e.x, e.y, e.gz), px: f.px, py: f.py, scale: FX_SCALE / e.s.scale, alpha });
     }
     const L = this.lights.map(l => ({ x: l.x, y: l.y, r: l.r, c: l.c, i: l.i * Math.min(1, l.life / l.max * 1.5) }));
     for (const a of this.heroes) L.push({ x: a.x + 8, y: a.y + 6, r: 40, c: [255, 236, 210], i: 0.22 });
