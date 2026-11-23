@@ -1,20 +1,94 @@
-// ===== Chronoshard engine: canvas, input, sound =====
-import type { Track } from './types.js';
+// ===== Chronoshard engine: canvas, UI layer, world-drawing mode, input, sound =====
+import type { MapDef, RGB, Track } from './types.js';
 
-export const TILE = 16, VW = 20, VH = 15, S = 3;
-export const W = VW * TILE * S, H = VH * TILE * S; // 960 x 720
+// the world view is 428x240 art pixels (26.75 x 15 tiles), shown at exactly 3x: a 1284x720 (16:9) screen
+export const TILE = 16, VW = 26.75, VH = 15, S = 3;
+/** the UI frame: menus and windows are laid out on a 960x720 frame centred on the wider screen */
+export const W = 960, H = VH * TILE * S;
+/** the full logical screen width, and where the centred UI frame starts on it */
+export const SW = VW * TILE * S, UX = (SW - W) / 2; // 1284, 162
+/** the visible canvas: Three.js (world3d.ts) renders the world into it and lays the UI layer on top */
 export const canvas = document.getElementById('game') as HTMLCanvasElement;
-canvas.width = W; canvas.height = H;
-export const screenCtx = canvas.getContext('2d')!;
-screenCtx.imageSmoothingEnabled = false;
-// the world renders into a native-resolution buffer, then is scaled up once (pixel-perfect)
-export const LO = document.createElement('canvas'); LO.width = VW * TILE; LO.height = VH * TILE;
-export const loCtx = LO.getContext('2d')!; loCtx.imageSmoothingEnabled = false;
-/** the context everything draws into: the low-res world buffer or the full-size screen */
+const mk2d = (w: number, h: number): [HTMLCanvasElement, CanvasRenderingContext2D] => {
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const g = c.getContext('2d')!; g.imageSmoothingEnabled = false; return [c, g];
+};
+// UI layer: menus, text and the title/ending, drawn at UIK x the logical size so text stays sharp
+export let UIK = 2;
+export const [uiCanvas, screenCtx] = mk2d(SW * UIK, H * UIK);
+/** picks the UI resolution from the canvas's on-screen size; returns true when it changed */
+export function fitResolution(): boolean {
+  const r = canvas.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+  const k = Math.max(1, Math.min(3, Math.ceil(((r.height || H) * dpr) / H - 0.15)));
+  if (k === UIK && uiCanvas.width === SW * k) return false;
+  UIK = k; uiCanvas.width = SW * k; uiCanvas.height = H * k; return true;
+}
+/**
+ * World drawing. The game's draw code runs with `ctx` pointed at a 1x1 stand-in canvas; that's the signal for the
+ * drawing helpers (blit, pixShadow, drawEnemy...) to record what's on screen into Frame (billboards, shadows, glows,
+ * lights) for world3d.ts instead of painting pixels. Positions are still given the 2D way, relative to a drawing
+ * camera whose window reaches TOPX art px above the view and BOTX below it (the tilted 3D camera sees further than the
+ * old flat view), which is what particles and lights are culled against.
+ */
+export const TOPX = 160, BOTX = 64;
+/** height of the drawing window in art pixels */
+export const ART_H = VH * TILE + TOPX + BOTX;
+const [, worldCtx] = mk2d(1, 1);
+/** rounds a world position to the nearest screen pixel (a third of an art pixel) */
+export function snapPx(v: number): number { return Math.round(v * S) / S; }
+/** the context drawing goes to: the UI layer, or the world stand-in while the world is being described */
 export let ctx: CanvasRenderingContext2D = screenCtx;
-export function toWorld() { ctx = loCtx; ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; ctx.fillStyle = '#000'; ctx.fillRect(0, 0, LO.width, LO.height); }
+/** true while drawing the world (so sprites, shadows and glows are recorded into Frame) */
+export function inWorld(): boolean { return ctx === worldCtx; }
+export function toWorld() {
+  ctx = worldCtx;
+  Frame.lights.length = 0; Frame.shadows.length = 0; Frame.sprites.length = 0; Frame.effects.length = 0; Frame.glows.length = 0; Frame.particles.length = 0; Frame.shards.length = 0; Frame.dim = 0;
+}
 export function toScreen() { ctx = screenCtx; }
-export function blitWorld(ox = 0, oy = 0) { screenCtx.imageSmoothingEnabled = false; screenCtx.drawImage(LO, Math.round(ox / S) * S, Math.round(oy / S) * S, W, H); }
+/** starts a frame's UI drawing: transparent, scaled and shifted so code keeps using the centred 960x720 frame */
+export function beginScreen() {
+  ctx = screenCtx; screenCtx.setTransform(1, 0, 0, 1, 0, 0); screenCtx.globalAlpha = 1; screenCtx.globalCompositeOperation = 'source-over';
+  screenCtx.clearRect(0, 0, uiCanvas.width, uiCanvas.height); screenCtx.setTransform(UIK, 0, 0, UIK, UX * UIK, 0); screenCtx.imageSmoothingEnabled = false;
+  Frame.world = false;
+}
+/** fills the whole screen (not just the centred UI frame), e.g. for fades and flashes */
+export function fillScreen(color: string): void { ctx.fillStyle = color; ctx.fillRect(-UX, 0, SW, H); }
+/** marks the world as drawn this frame (world3d renders it under the UI), with an optional screen-shake offset */
+export function blitWorld(ox = 0, oy = 0) { Frame.world = true; Frame.shakeX = Math.round(ox / S); Frame.shakeY = Math.round(oy / S); }
+
+/** a position in the 3D world: map x (east), height y (up), map z (south), in art pixels (see space.ts) */
+export interface Vec3 { x: number; y: number; z: number }
+/** a point light at a world position; r its reach, c its colour (0..255), k its intensity */
+export interface FrameLight extends Vec3 { r: number; c: RGB; k: number }
+/** a soft contact shadow on the ground at map (x, z); w the footprint width (art px) */
+export interface Shadow { x: number; z: number; w: number }
+/** per-era colour grade: lift tints shadows, gain tints highlights */
+export interface Grade { lift: RGB; gain: RGB; sat: number; con: number }
+/** a sprite standing upright: its left edge at map x, standing on ground line z; image row `foot` touches the ground */
+export interface Billboard { img: HTMLCanvasElement; x: number; z: number; foot: number; scale: number; glow?: number }
+/** a drawn effect animation whose pivot (px, py in the image) sits at a world position */
+export interface EffectSprite extends Vec3 { img: HTMLCanvasElement; px: number; py: number; scale: number; alpha: number; dynamic?: boolean }
+/** a soft additive glow centred at a world position (a wisp, the Hollow King, a rift) */
+export interface GlowSprite extends Vec3 { r: number; c: RGB; a: number }
+/** an ambient particle or spell debris at a world position; add = it glows (additive) */
+export interface Particle3D extends Vec3 { c: string; a: number; add: boolean }
+/** what the world pass hands to the compositor each frame */
+export const Frame = {
+  world: false, shakeX: 0, shakeY: 0, t: 0,
+  /** the drawing camera's offset (map coords = drawn coords + this; Space.map converts) */
+  drawCamX: 0, drawCamY: 0,
+  lights: [] as FrameLight[], shadows: [] as Shadow[], sprites: [] as Billboard[], effects: [] as EffectSprite[], glows: [] as GlowSprite[], particles: [] as Particle3D[],
+  /** the Hollow King's orbiting time shards */
+  shards: [] as Vec3[],
+  /** battle focus: darkens the scenery (not the combatants) */
+  dim: 0,
+  /** 3D: the view's centre on the ground, in map coordinates; the map; the distance haze colour; how strongly the sun shapes things */
+  focusX: 0, focusY: 0, map: null as MapDef | null, fog: [0, 0, 0] as RGB, sun: 1,
+  /** the player's middle, so scenery in front of them turns see-through; null in battle */
+  seeThrough: null as Vec3 | null,
+  ambient: [255, 255, 255] as RGB, clouds: 0, rays: 0, dof: 0, bloom: 1,
+  grade: { lift: [0, 0, 0], gain: [1, 1, 1], sat: 1, con: 1 } as Grade,
+};
 
 // ---------- seeded random ----------
 export function rng(seed: number): () => number {

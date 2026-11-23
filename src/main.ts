@@ -1,18 +1,20 @@
-import { H, Input, Sound, W, blitWorld, ctx, rng, toScreen, toWorld } from './engine.js';
-import { cursor, px, text } from './pixel.js';
+import { Frame, H, Input, SW, Sound, UX, beginScreen, blitWorld, ctx, fillScreen, rng, toScreen, toWorld } from './engine.js';
+import { World3D } from './world3d.js';
+import { Sheets } from './sheets.js';
+import { cursor, px, text, uiWindow } from './pixel.js';
 import { drawHero } from './sprites.js';
 import { Atmos } from './atmos.js';
-import { HEROES } from './data.js';
-import { Battle } from './battle.js';
-import { G, Game } from './game.js';
+import { HEROES, MAPS } from './data.js';
+import { Battle, heroStats } from './battle.js';
+import { G, Game, worldCam } from './game.js';
 import type { HeroId } from './types.js';
 
 // ===== Chronoshard main: title, ending, loop =====
 export const Title = { idx: 0 };
-export const STARS = Array.from({ length: 140 }, (_, i) => { const r = rng(i + 7); return { x: r() * W, y: r() * H, s: r() * 2 + 1, v: r() * 20 + 5 }; });
+export const STARS = Array.from({ length: 140 }, (_, i) => { const r = rng(i + 7); return { x: r() * SW - UX, y: r() * H, s: r() * 2 + 1, v: r() * 20 + 5 }; });
 
 export function drawStars(t: number, tint = '#0a0820'): void {
-  ctx.fillStyle = tint; ctx.fillRect(0, 0, W, H);
+  fillScreen(tint);
   for (const s of STARS) { ctx.globalAlpha = 0.4 + 0.6 * Math.abs(Math.sin(t + s.x)); px(ctx, s.x, (s.y + t * s.v) % H, s.s, s.s, '#fff'); }
   ctx.globalAlpha = 1;
 }
@@ -46,7 +48,25 @@ export function drawTitle() {
   const opts = Game.hasSave() ? ['New Game', 'Continue'] : ['New Game'];
   opts.forEach((s, i) => text(s, 480, 560 + i * 40, i === Title.idx ? '#fff' : '#8a8ab0', 18, 'center'));
   cursor(360, 562 + Title.idx * 40, t);
+  // the save's party stays in view; dimmed unless Continue (which loads it) is selected
+  if (opts.includes('Continue')) { ctx.globalAlpha = opts[Title.idx] === 'Continue' ? 1 : 0.55; drawSaveSummary(); ctx.globalAlpha = 1; }
   text('Arrows/WASD move · Z/Enter confirm · X/Esc back · C menu', 480, 690, '#6a6a90', 10, 'center');
+}
+
+/** what Continue will load: where, gold, and each hero's level, HP and MP */
+function drawSaveSummary(): void {
+  const d = Game.peekSave(); if (!d || !d.party?.length) return;
+  const map = MAPS[d.map], h = 96 + d.party.length * 56, x = 640, y = 120, w = 304, r = x + w - 28;
+  uiWindow(x, y, w, h);
+  text(map ? map.era : '', x + 28, y + 22, '#ffe050', 12);
+  text(map ? map.name : d.map, x + 28, y + 42, '#fff', 14);
+  text(`${d.gold} G`, r, y + 22, '#ffe050', 12, 'right');
+  d.party.forEach((hs, i) => {
+    const st = heroStats(hs), ry = y + 78 + i * 56, dead = hs.hp <= 0;
+    text(HEROES[hs.id].name, x + 28, ry, dead ? '#ff6060' : '#fff', 14); text(`Lv ${hs.lv}`, r, ry, '#fff', 12, 'right');
+    text(`HP ${hs.hp}/${st.maxhp}`, x + 28, ry + 22, dead ? '#ff6060' : '#c0c8f0', 12);
+    text(`MP ${hs.mp}/${st.maxmp}`, r, ry + 22, '#a0d0ff', 12, 'right');
+  });
 }
 
 export const ENDING = [
@@ -74,13 +94,18 @@ export function drawEnding() {
   ENDING.forEach((s, i) => { const y = y0 + i * 60; if (y > -40 && y < H) text(s, 480, y, i >= ENDING.length - 2 ? '#ffe8a0' : '#fff', i === ENDING.length - 2 ? 36 : 14, 'center'); });
   const fy = Math.max(470, y0 + ENDING.length * 60 + 40);
   ctx.save(); ctx.scale(4, 4);
-  (['kael', 'bram', 'lyra'] as HeroId[]).forEach((id, i) => drawHero(96 + i * 22, fy / 4, HEROES[id].look, 'down', (G.t * 4 | 0) % 2 && t > ENDING.length * 2.2 ? 1 : 0));
+  (['kael', 'bram', 'lyra'] as HeroId[]).forEach((id, i) => drawHero(96 + i * 22, fy / 4, HEROES[id].look, 'down', (G.t * 4 | 0) % 2 && t > ENDING.length * 2.2 ? 1 : 0, { sheet: id }));
   ctx.restore();
-  if (t > ENDING.length * 2.2 + 6 && (G.t * 2 | 0) % 2) text('Press Z', 480, 680, '#a0a8d0', 12, 'center');
+  // once the credits have rolled by, the party's final HP/MP fades in beneath them
+  const rest = t - ENDING.length * 2.2;
+  if (rest > 0) { ctx.globalAlpha = Math.min(1, rest); Game.drawPartyPanel(180, 542, 600, 200, 410); ctx.globalAlpha = 1; }
+  if (t > ENDING.length * 2.2 + 6 && (G.t * 2 | 0) % 2) text('Press Z', 480, 698, '#a0a8d0', 12, 'center');
 }
 
 // ---------- main loop ----------
 Atmos.init();
+World3D.init(); // Three.js renders the world and lays the UI on top
+void Sheets.load(); // the drawn sprite sheets stream in; generated sprites stand in until they're ready
 export let lastTime = performance.now();
 export function loop(now: number): void {
   const dt = Math.min(0.05, (now - lastTime) / 1000); lastTime = now; G.t += dt;
@@ -99,23 +124,25 @@ export function loop(now: number): void {
     else if (G.mode === 'ending') updateEnding(dt);
   }
 
-  if (G.map && G.mode !== 'title' && G.mode !== 'ending') Atmos.update(dt, G.map, Math.round(G.camX), Math.round(G.camY));
+  if (G.map && G.mode !== 'title' && G.mode !== 'ending') Atmos.update(dt, G.map, ...worldCam());
   // draw
-  toScreen(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.imageSmoothingEnabled = false;
-  ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
+  beginScreen();
+  // world post-processing strength: full tilt-shift on the field, gentler in battle so tall enemies stay sharp
+  Frame.dof = G.mode === 'battle' ? 0.45 : 0.85; Frame.bloom = 1;
   if (G.mode === 'title') drawTitle();
   else if (G.mode === 'ending') drawEnding();
   else if (G.mode === 'battle') Battle.draw();
   else {
-    toWorld(); Game.drawWorld(false); Atmos.draw(G.map, Math.round(G.camX), Math.round(G.camY)); toScreen();
+    toWorld(); Game.drawWorld(false); Atmos.draw(G.map, ...worldCam()); toScreen();
     blitWorld(G.shake > 0 ? (Math.random() - 0.5) * 12 : 0, G.shake > 0 ? (Math.random() - 0.5) * 12 : 0);
-    if (G.riftFlash > 0) { ctx.fillStyle = `rgba(200,150,255,${G.riftFlash})`; ctx.fillRect(0, 0, W, H); G.riftFlash -= dt * 1.5; }
+    if (G.riftFlash > 0) { fillScreen(`rgba(200,150,255,${G.riftFlash})`); G.riftFlash -= dt * 1.5; }
     if (G.mode === 'field') Game.drawFieldHud();
     if (G.mode === 'menu') Game.drawMenu();
     if (G.mode === 'shop') Game.drawShop();
     Game.drawDialog();
   }
-  if (G.fade > 0) { ctx.fillStyle = `rgba(0,0,0,${G.fade})`; ctx.fillRect(0, 0, W, H); }
+  if (G.fade > 0) fillScreen(`rgba(0,0,0,${G.fade})`);
+  World3D.render();
   Input.clear();
   requestAnimationFrame(loop);
 }

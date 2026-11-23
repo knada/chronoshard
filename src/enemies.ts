@@ -1,5 +1,8 @@
-import { ctx, rng } from './engine.js';
-import { PAL, gridSprite, hexRgb, mkCanvas, paintGrid, pixShadow, px, rgbHex, shade, silhouette, tint } from './pixel.js';
+import { Frame, ctx, inWorld, rng, snapPx } from './engine.js';
+import { Sheets } from './sheets.js';
+import { Space } from './space.js';
+import type { Sheet } from './sheets.js';
+import { PAL, blit, gridSprite, hexRgb, mkCanvas, paintGrid, pixShadow, px, rgbHex, shade, silhouette, tint } from './pixel.js';
 import type { EnemyKind, EnemyShape } from './types.js';
 import type { Ctx, Palette } from './pixel.js';
 
@@ -391,8 +394,10 @@ export function enemyFrames(k: EnemyKind): EnemyFrames | null {
 export function enemyHeight(k: EnemyKind): number { const e = enemyFrames(k); return e ? e.h : 18; }
 
 // x,y = top-left of the enemy's 16x16 footprint tile (world px)
-export function drawEnemy(kind: EnemyKind, x: number, y: number, t: number, o: { flash?: boolean; noShadow?: boolean } = {}): void {
-  const g = ctx, cx = Math.round(x + 8), by = Math.round(y + 16);
+interface EnemyDrawOpts { flash?: boolean; noShadow?: boolean; pose?: number; side?: 'left' | 'right' }
+/** A battle pose holds a frame; an overworld travel direction selects the side cycle. */
+export function drawEnemy(kind: EnemyKind, x: number, y: number, t: number, o: EnemyDrawOpts = {}): void {
+  const sn = inWorld() ? snapPx : Math.round, g = ctx, cx = sn(x + 8), by = sn(y + 16);
   const E = enemyFrames(kind);
   if (!E) return;
   const spirit = SPIRIT.has(kind.shape), speed = kind.shape === 'golem' ? 1.1 : spirit ? 5 : 2.2;
@@ -400,22 +405,59 @@ export function drawEnemy(kind: EnemyKind, x: number, y: number, t: number, o: {
   const fly = kind.shape === 'bat', fr = n > 1 ? ((phase(fly) % n) + n) % n : 0; // never negative, even off-screen left
   const bob = fly ? Math.round(Math.sin(t * 5 + x) * 2) - 6 : kind.shape === 'hollow' ? Math.round(Math.sin(t * 1.6) * 2) - 4 : spirit ? Math.round(Math.sin(t * 3 + x * 0.1) * 2) - 4 : 0;
   if (!o.noShadow) pixShadow(g, cx, by - 1, Math.min(E.w - 4, kind.shape === 'hollow' ? 44 : kind.shape === 'golem' ? 40 : fly ? 14 : spirit ? 10 : E.w - 2));
-  if (kind.shape === 'hollow') hollowAura(g, cx, by - E.h / 2 + bob, t);
-  if (spirit) { // soft additive glow behind the spirit
-    const gy = by - E.h * 0.62 + bob, prev = g.globalCompositeOperation; g.globalCompositeOperation = 'lighter';
-    const gr = g.createRadialGradient(cx, gy, 2, cx, gy, 34); gr.addColorStop(0, hexA(kind.color, 0.6)); gr.addColorStop(1, hexA(kind.color, 0));
-    g.fillStyle = gr; g.fillRect(cx - 34, gy - 34, 68, 68); g.globalCompositeOperation = prev;
+  if (inWorld()) { // in the world, glows are soft additive sprites around the creature
+    const [X, gz] = Space.map(cx, by + 1), [, top] = Space.map(0, by - E.h + bob); // ground line, and the top of the art
+    if (kind.shape === 'hollow') {
+      Frame.glows.push({ ...Space.onObject(X, top + E.h / 2, gz), r: 48, c: [170, 90, 255], a: 0.38 });
+      // ten time shards orbit him in a level ring a little below his middle; the depth buffer hides the far side
+      const mid = Space.onObject(X, top + E.h / 2 + 7, gz);
+      for (let i = 0; i < 10; i++) { const a = i / 10 * 6.283 + t * 0.7; Frame.shards.push({ x: mid.x + Math.cos(a) * 38, y: mid.y + Math.sin(a * 2 + t * 1.3) * 3, z: mid.z + Math.sin(a) * 24 }); }
+    }
+    if (spirit) Frame.glows.push({ ...Space.onObject(X, top + E.h * 0.38, gz), r: 30, c: hexRgb(kind.color), a: 0.4 });
+  } else if (kind.shape === 'hollow') hollowAura(g, cx, by - E.h / 2 + bob, t);
+  if (spirit && !inWorld()) { // on the UI (the Hollow King's portrait): a soft additive glow behind the spirit
+    const gl = g, gy = by - E.h * 0.62 + bob, prev = gl.globalCompositeOperation; gl.globalCompositeOperation = 'lighter';
+    const gr = gl.createRadialGradient(cx, gy, 2, cx, gy, 34); gr.addColorStop(0, hexA(kind.color, 0.3)); gr.addColorStop(1, hexA(kind.color, 0));
+    gl.fillStyle = gr; gl.fillRect(cx - 34, gy - 34, 68, 68); gl.globalCompositeOperation = prev;
   }
   const flashing = o.flash && ((t * 30) | 0) % 2 === 0;
   if (spirit) g.globalAlpha *= 0.92;
-  g.drawImage(flashing ? E.flash[fr] : E.frames[fr], cx - (E.w >> 1), by - E.h + 1 + bob);
+  const sh = Sheets.enemy(kind.name);
+  if (sh) {
+    drawSheetEnemy(sh, kind, E.h, cx, by, bob, t, x, !!flashing, o); if (spirit) g.globalAlpha /= 0.92;
+    if (spirit && inWorld() && Frame.sprites.length) Frame.sprites[Frame.sprites.length - 1].glow = 0.6; // spirits glow from within
+    return;
+  }
+  blit(flashing ? E.flash[fr] : E.frames[fr], cx - (E.w >> 1), by - E.h + 1 + bob, E.h - bob); // ground is `by`: floaters hover
   if (spirit) g.globalAlpha /= 0.92;
 }
+/**
+ * an enemy from its drawn sheet, scaled to the generated sprite's height (battle layout and arrows rely on it).
+ * Sheets pivoted at the feet stand on the ground line `by`; sheets pivoted at the centre hover, like the generated ones.
+ */
+function drawSheetEnemy(sh: Sheet, kind: EnemyKind, h: number, cx: number, by: number, bob: number, t: number, x: number, flash: boolean, { pose, side }: EnemyDrawOpts): void {
+  const n = sh.frames.length, f0 = sh.frames[0], s = h / f0.c.height, shape = kind.shape;
+  const cyc = shape === 'bat' ? [0, 1, 2, 1][Math.floor(t * 10 + Math.abs(x) * 0.1) % 4]
+    : shape === 'wisp' || shape === 'voidwisp' || shape === 'blob' || shape === 'emberblob' ? Math.floor(t * 2.4 + Math.abs(x) * 0.1) % 2 : 0;
+  const sideStart = pose === undefined && side ? sh.names.indexOf('side-move-a') : -1;
+  let i = pose !== undefined && pose < n ? pose : cyc;
+  if (sideStart >= 0) {
+    const step = Math.floor(t * (shape === 'bat' ? 10 : 7)) % 4;
+    i = sideStart + (step === 3 && sh.names[sideStart + step] !== 'side-move-d' ? 1 : step);
+  }
+  const flip = sideStart >= 0 && side === 'right';
+  const f = flash ? Sheets.variant(sh, i, flip ? 'flipflash' : 'flash') : flip ? Sheets.variant(sh, i, 'flip') : sh.frames[i];
+  const feet = f0.py > f0.c.height * 0.7; // pivot at the feet, or at the middle (flyers)
+  if (feet) { blit(f.c, cx - f.px * s, by + 1 - f.py * s, f.py, s); return; }
+  const top = by - h / 2 + bob - f.py * s; // centre where the generated flyer's middle was
+  blit(f.c, cx - f.px * s, top, (by + 1 - top) / s, s);
+}
 export function hollowAura(g: Ctx, cx: number, cy: number, t: number): void {
-  const prev = g.globalCompositeOperation; g.globalCompositeOperation = 'lighter';
-  const gr = g.createRadialGradient(cx, cy, 4, cx, cy, 54); gr.addColorStop(0, 'rgba(170,90,255,0.5)'); gr.addColorStop(1, 'rgba(90,20,160,0)');
-  g.fillStyle = gr; g.fillRect(cx - 54, cy - 54, 108, 108);
-  g.globalCompositeOperation = prev;
+  // the aura glows (glow layer in the world, so it blooms); the shards are solid
+  const gl = g, prev = gl.globalCompositeOperation; // (only drawn on the UI now: his dialogue portrait) gl.globalCompositeOperation = 'lighter';
+  const gr = gl.createRadialGradient(cx, cy, 4, cx, cy, 54); gr.addColorStop(0, 'rgba(170,90,255,0.42)'); gr.addColorStop(1, 'rgba(90,20,160,0)');
+  gl.fillStyle = gr; gl.fillRect(cx - 54, cy - 54, 108, 108);
+  gl.globalCompositeOperation = prev;
   for (let i = 0; i < 10; i++) { // orbiting time shards (front half; the back half is hidden behind the robe)
     const a = i / 10 * 6.283 + t * 0.7, sx = Math.round(cx + Math.cos(a) * 38), sy = Math.round(cy + 6 + Math.sin(a) * 14);
     if (Math.sin(a) < 0) { px(g, sx, sy, 2, 2, '#6a40a0'); continue; }

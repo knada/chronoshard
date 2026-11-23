@@ -1,4 +1,4 @@
-import { TILE, VH, VW, ctx, rng } from './engine.js';
+import { TILE, rng } from './engine.js';
 import { PAL, mkCanvas, px, shade, speckle, tint } from './pixel.js';
 import type { Light, MapDef } from './types.js';
 import type { Ctx } from './pixel.js';
@@ -8,7 +8,8 @@ export type Side = 'top' | 'bottom' | 'left' | 'right';
 /** a tile animated every frame on top of the pre-rendered base */
 export type AnimTile = { type: 'water' | 'panel'; x: number; y: number } | { type: 'blink'; x: number; y: number; ph: number; c: string };
 /** a map pre-rendered into a ground layer, an above-actors overlay, animated tiles and light sources */
-export interface MapLayers { base: HTMLCanvasElement; over: HTMLCanvasElement; anim: AnimTile[]; lights: Light[] }
+/** pre-rendered map layers; base/over include an apron of border scenery `pad` pixels wide on every side */
+export interface MapLayers { base: HTMLCanvasElement; over: HTMLCanvasElement; anim: AnimTile[]; lights: Light[]; pad: number }
 
 // ===== Chronoshard map renderer: autotiled, pre-rendered base + overlay layers, animated tiles, light sources =====
 export const TILES: Record<string, { solid: boolean }> = {};
@@ -68,9 +69,70 @@ export function grassEdge(g: Ctx, X: number, Y: number, side: Side, type: Ground
 }
 
 // ---------- map build ----------
+/** tiles of border scenery around every map, so a view wider than the map never shows black edges */
+export const APRON = 10; // the 3D view sees well past the map's edges
+/**
+ * the map with an apron: filled with its most common border tile (trees, walls, void), except that walkable exits
+ * (paths leading off the edge) carry on outward for two tiles
+ */
+export function apronMap(map: MapDef): MapDef {
+  const A = APRON, w = map.w, h = map.h, count: Record<string, number> = {};
+  for (let x = 0; x < w; x++) for (const y of [0, h - 1]) count[map.rows[y][x]] = (count[map.rows[y][x]] || 0) + 1;
+  for (let y = 0; y < h; y++) for (const x of [0, w - 1]) count[map.rows[y][x]] = (count[map.rows[y][x]] || 0) + 1;
+  const fill = Object.entries(count).sort((a, b) => b[1] - a[1])[0][0], rows: string[] = [];
+  for (let y = -A; y < h + A; y++) {
+    let r = '';
+    for (let x = -A; x < w + A; x++) {
+      if (x >= 0 && y >= 0 && x < w && y < h) { r += map.rows[y][x]; continue; }
+      const cx = Math.max(0, Math.min(w - 1, x)), cy = Math.max(0, Math.min(h - 1, y)), edge = map.rows[cy][cx];
+      const straight = x === cx || y === cy, out = Math.abs(x - cx) + Math.abs(y - cy);
+      r += straight && out <= 2 && edge !== fill && !isSolidTile(edge) ? edge : fill;
+    }
+    rows.push(r);
+  }
+  return { ...map, w: w + 2 * A, h: h + 2 * A, rows };
+}
+/**
+ * one light per group of touching glow panels, at the group's centre. Lighting each panel separately stacked up to
+ * six lights on anything standing among them (Unit-7 in the ruins washed out to white); a group's light instead grows
+ * gently with its size, so a bank of panels reads brighter than one panel without blowing out.
+ */
+export function panelLights(anim: AnimTile[]): Light[] {
+  const cells = new Map<string, { x: number; y: number }>(), seen = new Set<string>(), out: Light[] = [];
+  for (const a of anim) if (a.type === 'panel') cells.set(`${a.x / TILE},${a.y / TILE}`, a);
+  for (const [key] of cells) {
+    if (seen.has(key)) continue;
+    const group: { x: number; y: number }[] = [], st = [key];
+    while (st.length) {
+      const k = st.pop()!; if (seen.has(k) || !cells.has(k)) continue;
+      seen.add(k); group.push(cells.get(k)!);
+      const [tx, ty] = k.split(',').map(Number); st.push(`${tx + 1},${ty}`, `${tx - 1},${ty}`, `${tx},${ty + 1}`, `${tx},${ty - 1}`);
+    }
+    const n = group.length, x = group.reduce((s, c) => s + c.x, 0) / n + 8, y = group.reduce((s, c) => s + c.y, 0) / n + 8;
+    out.push({ x, y, r: 30 + 9 * Math.sqrt(n - 1), c: [80, 200, 255], i: Math.min(0.85, 0.55 + 0.1 * Math.sqrt(n - 1)), pulse: true, h: 4 });
+  }
+  return out;
+}
+/** the ground a solid tile stands on: the most common walkable ground among its neighbours, else the map's default */
+export function groundUnderAt(map: MapDef, x: number, y: number): GroundType {
+  const flat = map.rows.join(''), defGround: GroundType = flat.includes('K') ? 'void' : flat.includes('M') ? 'metal' : flat.includes('v') ? 'forest' : 'grass';
+  const n: Partial<Record<GroundType, number>> = {};
+  for (const [dx, dy] of [[0, 1], [0, -1], [1, 0], [-1, 0]]) { const c = tileAt(map, x + dx, y + dy), gt = c == null ? undefined : GROUND[c]; if (gt && gt !== 'path' && gt !== 'flag') n[gt] = (n[gt] || 0) + 1; }
+  let best: GroundType = defGround, bn = 0; for (const k of Object.keys(n) as GroundType[]) if (n[k]! > bn) { best = k; bn = n[k]!; }
+  return best;
+}
 export const MapRender = {
   cache: {} as Record<string, MapLayers>,
-  get(map: MapDef): MapLayers { return this.cache[map.id] || (this.cache[map.id] = this.build(map)); },
+  get(map: MapDef): MapLayers { return this.cache[map.id] || (this.cache[map.id] = this.buildWithApron(map)); },
+  /** builds the map with its apron, then moves positions back to map coordinates and adds the per-map decor */
+  buildWithApron(map: MapDef): MapLayers {
+    const P = APRON * TILE, R = this.build(apronMap(map));
+    for (const a of R.anim) { a.x -= P; a.y -= P; }
+    for (const l of R.lights) { l.x -= P; l.y -= P; }
+    const g = R.base.getContext('2d')!, o = R.over.getContext('2d')!;
+    g.save(); o.save(); g.translate(P, P); o.translate(P, P); this.decor(map, g, o, R.lights); g.restore(); o.restore();
+    R.pad = P; return R;
+  },
   build(map: MapDef): MapLayers {
     const W2 = map.w * TILE, H2 = map.h * TILE, [base, g] = mkCanvas(W2, H2), [over, o] = mkCanvas(W2, H2);
     const at = (x: number, y: number) => tileAt(map, x, y), anim: AnimTile[] = [], lights: Light[] = [];
@@ -101,7 +163,7 @@ export const MapRender = {
           const sides: Record<Side, string | null> = { top: up, bottom: dn, left: lf, right: rt };
           for (const s of Object.keys(sides) as Side[]) { const sc = sides[s], ng = gnd(sc) || (sc && !isSolidTile(sc) ? null : (sc && ['#', 'r', 'f', 'L'].includes(sc) ? groundUnder(x, y) : null)); if (ng && GRASSY.has(ng)) grassEdge(g, X, Y, s, ng, r); }
         }
-        if (ch === 'G') { px(g, X + 1, Y + 1, 14, 14, '#1c2438'); px(g, X + 3, Y + 3, 10, 10, '#1e3a58'); px(g, X + 7, Y + 3, 2, 10, '#2a5a80'); px(g, X + 3, Y + 7, 10, 2, '#2a5a80'); anim.push({ type: 'panel', x: X, y: Y }); lights.push({ x: X + 8, y: Y + 8, r: 30, c: [80, 200, 255], i: 0.55, pulse: true }); }
+        if (ch === 'G') { px(g, X + 1, Y + 1, 14, 14, '#1c2438'); px(g, X + 3, Y + 3, 10, 10, '#1e3a58'); px(g, X + 7, Y + 3, 2, 10, '#2a5a80'); px(g, X + 3, Y + 7, 10, 2, '#2a5a80'); anim.push({ type: 'panel', x: X, y: Y }); }
       } else {
         const ug = ['#', 'r', 'f', 'L', 'B', '~'].includes(ch) ? groundUnder(x, y) : null;
         if (ug && ch !== '~' && ch !== 'B') paintGround(g, ug, X, Y, r);
@@ -181,7 +243,7 @@ export const MapRender = {
           case 'L':
             px(g, X + 5, Y + 13, 6, 2, '#2a2438'); px(g, X + 7, Y + 2, 2, 12, '#3a3448'); px(g, X + 7, Y + 2, 1, 12, '#5a5468');
             px(o, X + 4, Y - 3, 8, 1, '#2a2438'); px(o, X + 5, Y - 2, 6, 6, '#2a2438'); px(o, X + 6, Y - 1, 4, 4, PAL.gold); px(o, X + 6, Y - 1, 2, 2, '#fff8c8');
-            lights.push({ x: X + 8, y: Y + 1, r: 44, c: [255, 200, 110], i: 0.8, flicker: true }); break;
+            lights.push({ x: X + 8, y: Y + 1, r: 44, c: [255, 200, 110], i: 0.8, flicker: true, h: 26 }); break;
           case 'X': {
             paintGround(g, 'metal', X, Y, r);
             px(g, X + 1, Y + 12, 15, 4, 'rgba(10,10,20,0.35)');
@@ -217,8 +279,8 @@ export const MapRender = {
         if (TALL.has(lf)) px(g, X, Y, 3, 16, 'rgba(20,10,40,0.2)');
       }
     }
-    this.decor(map, g, o, lights);
-    return { base, over, anim, lights };
+    lights.push(...panelLights(anim));
+    return { base, over, anim, lights, pad: 0 };
   },
   decor(map: MapDef, g: Ctx, o: Ctx, lights: Light[]): void {
     if (map.id === 'fields') { // clock face on the Old Clocktower
@@ -237,21 +299,3 @@ export const MapRender = {
   },
 };
 
-export function drawMapTiles(map: MapDef, cx: number, cy: number, t: number): void {
-  const R = MapRender.get(map), g = ctx;
-  g.drawImage(R.base, -cx, -cy);
-  for (const a of R.anim) {
-    const sx = a.x - cx, sy = a.y - cy; if (sx < -16 || sy < -16 || sx > VW * TILE || sy > VH * TILE) continue;
-    if (a.type === 'water') {
-      const ph = t * 1.4 + (a.x + a.y * 0.6) * 0.05;
-      for (let i = 0; i < 2; i++) { const off = ((ph * 6 + i * 8 + a.y * 0.3) % 16 + 16) % 16; px(g, sx + ((off + i * 5) % 12) + 2, sy + 4 + i * 6, 4, 1, 'rgba(112,184,240,0.75)'); }
-      if (Math.sin(t * 3 + a.x * 0.7 + a.y * 1.3) > 0.97) px(g, sx + ((a.x * 3) % 12) + 2, sy + ((a.y * 5) % 10) + 3, 1, 1, '#ffffff');
-    } else if (a.type === 'panel') {
-      const k = 0.5 + 0.5 * Math.sin(t * 2.5 + a.x * 0.05);
-      g.globalAlpha = 0.45 + k * 0.55; px(g, sx + 7, sy + 3, 2, 10, '#6ae0ff'); px(g, sx + 3, sy + 7, 10, 2, '#6ae0ff'); px(g, sx + 7, sy + 7, 2, 2, '#ffffff'); g.globalAlpha = 1;
-    } else if (a.type === 'blink') {
-      if (Math.sin(t * 3 + a.ph) > 0) px(g, sx, sy, 1, 1, a.c);
-    }
-  }
-}
-export function drawMapOverlay(map: MapDef, cx: number, cy: number): void { ctx.drawImage(MapRender.get(map).over, -cx, -cy); }

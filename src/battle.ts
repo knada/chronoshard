@@ -1,20 +1,23 @@
-import { H, Input, S, Sound, TILE, VH, VW, W, blitWorld, ctx, toScreen, toWorld } from './engine.js';
-import { PAL, bar, cursor, hexRgb, px, text, uiWindow, wrapText } from './pixel.js';
+import { Frame, Input, S, Sound, TILE, VH, VW, blitWorld, ctx, fillScreen, toScreen, toWorld } from './engine.js';
+import { Space } from './space.js';
+import { Sheets } from './sheets.js';
+import type { Sheet } from './sheets.js';
+import { PAL, bar, cursor, hexRgb, measure, text, uiWindow, wrapText } from './pixel.js';
 import { drawHero } from './sprites.js';
 import { drawEnemy, enemyHeight, enemyPixels } from './enemies.js';
-import { isSolidTile, pring, tileAt } from './tiles.js';
+import { isSolidTile, tileAt } from './tiles.js';
 import { Atmos } from './atmos.js';
 import { DUALS, ENEMIES, HEROES, ITEMS, MUSIC } from './data.js';
-import { G, Game, ownedItems } from './game.js';
+import { G, Game, ownedItems, worldCam } from './game.js';
 
 import type { BattleEnemySpec, Dir, DualTech, Elem, EnemyKind, EnemyMove, HeroId, HeroState, Item, ItemId, Pose, RGB, Stats, Tech, TechTarget } from './types.js';
 import type { Foe } from './game.js';
-import type { Ctx } from './pixel.js';
 
 export interface BattleCfg { enemies: BattleEnemySpec[]; boss?: boolean; noRun?: boolean; foe?: Foe }
 interface ActorBase { name: string; x: number; y: number; hx: number; hy: number; atb: number; flash: number; pose?: Pose | null; moving?: boolean }
 export interface HeroActor extends ActorBase { side: 'hero'; h: HeroState; id: HeroId; st: Stats; dir: Dir; frame: number; hurtT?: number }
-export interface EnemyActor extends ActorBase { side: 'enemy'; k: EnemyKind; hp: number; maxhp: number; dead: boolean; fade: number; dir?: Dir; frame?: number }
+/** sheetPose: a frame of the enemy's drawn sheet to hold while it attacks */
+export interface EnemyActor extends ActorBase { side: 'enemy'; k: EnemyKind; hp: number; maxhp: number; dead: boolean; fade: number; dir?: Dir; frame?: number; sheetPose?: number }
 export type Actor = HeroActor | EnemyActor;
 /** what the player picked in the command menu, before targets are chosen */
 export interface PendingCmd { type: 'attack' | 'tech' | 'item'; target: TechTarget; tech?: Tech | DualTech; dual?: boolean; parts?: HeroActor[]; item?: ItemId }
@@ -25,8 +28,12 @@ export interface TechOption { t: Tech | DualTech; ok: boolean; label: string; co
 export interface ItemOption { k: ItemId; it: Item; n: number }
 export interface BattleMenu { actor: HeroActor; level: 'main' | 'tech' | 'item' | 'target'; idx: number; sub: number; scroll: number; pending?: PendingCmd; tIdx: number }
 export interface Particle { x: number; y: number; vx: number; vy: number; life: number; color: string; size: number; g?: number; glow?: boolean; delay?: number }
-export interface Pop { x: number; y: number; s: string; color: string; t: number }
-export interface Ring { x: number; y: number; r: number; vr: number; life: number; max: number; c: string }
+/** a damage/heal number: x, y where it's drawn the 2D way; gz the ground line of the actor it belongs to (for 3D) */
+/** a drawn effect playing: centred at x, y (2D placement) on an actor whose ground line is gz */
+export interface SheetFx { s: Sheet; x: number; y: number; gz: number; t: number; dur: number }
+/** art pixels per sheet pixel for effects (a 384px frame is about 50 art px across) */
+const FX_SCALE = 0.13;
+export interface Pop { x: number; y: number; s: string; color: string; t: number; gz: number }
 export interface FxLight { x: number; y: number; r: number; c: RGB; life: number; max: number; i: number }
 /** something that can deal damage: an enemy, a hero, or the pooled stats of a dual tech */
 export type DamageSource = { side: 'hero'; st: { atk: number; mag: number } } | EnemyActor;
@@ -34,6 +41,12 @@ export type DamageSource = { side: 'hero'; st: { atk: number; mag: number } } | 
 export type Anim = Generator<number, void, unknown>;
 export const isHero = (a: Actor): a is HeroActor => a.side === 'hero';
 export const isDual = (t: Tech | DualTech): t is DualTech => Array.isArray(t.mp);
+
+function heroEffectName(cmd: PendingCmd): string | undefined {
+  if (cmd.type === 'attack') return 'Basic Attack';
+  if (cmd.type === 'tech') return cmd.tech?.name;
+  return cmd.item && ITEMS[cmd.item].name;
+}
 
 // ===== Chronoshard battle: on-field Active Time Battle with dual techs =====
 export function heroStats(h: HeroState): Stats {
@@ -48,17 +61,23 @@ export const Battle = {
   active: false,
   cfg: { enemies: [] } as BattleCfg,
   t: 0, dt: 0, introT: 0, phase: 'intro' as 'intro' | 'active' | 'win' | 'lose' | 'run',
+  sheetFx: [] as SheetFx[],
+  actionFx: undefined as Sheet | undefined,
   enemies: [] as EnemyActor[], heroes: [] as HeroActor[], queue: [] as Action[], ready: [] as HeroActor[],
   menu: null as BattleMenu | null, msg: null as { s: string; t: number } | null, result: [] as string[],
   co: null as Anim | null, coWait: 0,
-  fx: [] as Particle[], pops: [] as Pop[], rings: [] as Ring[], lights: [] as FxLight[], clock: null as { x: number; y: number; t: number; life: number } | null,
+  fx: [] as Particle[], pops: [] as Pop[], lights: [] as FxLight[],
   hitStop: 0, dim: 0, dimT: 0, flashT: 0, shakeT: 0, camTX: 0, camTY: 0, cam0: { x: 0, y: 0 },
   start(cfg: BattleCfg): void {
     // cfg: {enemies:[{k,x,y}] (tile coords), boss, noRun, onWin, entity}
     this.cfg = cfg; this.active = true; this.t = 0; this.phase = 'intro'; this.introT = 0;
-    this.fx = []; this.pops = []; this.rings = []; this.lights = []; this.clock = null; this.hitStop = 0; this.dim = 0; this.dimT = 0; this.co = null; this.coWait = 0; this.queue = []; this.ready = []; this.menu = null; this.msg = null; this.flashT = 0; this.shakeT = 0;
+    this.actionFx = undefined;
+    Sheets.effect('Basic Attack');
+    if (!cfg.boss && !cfg.noRun) Sheets.effect('Run');
+    this.fx = []; this.pops = []; this.lights = []; this.sheetFx = []; this.hitStop = 0; this.dim = 0; this.dimT = 0; this.co = null; this.coWait = 0; this.queue = []; this.ready = []; this.menu = null; this.msg = null; this.flashT = 0; this.shakeT = 0;
     this.enemies = cfg.enemies.map((e): EnemyActor => {
       const k = ENEMIES[e.k];
+      for (const move of k.moves) Sheets.effect(move.name);
       return { side: 'enemy', k, name: k.name, hp: k.hp, maxhp: k.hp, x: e.x * TILE, y: e.y * TILE, hx: e.x * TILE, hy: e.y * TILE, atb: Math.random() * 40, dead: false, fade: 1, flash: 0 };
     });
     // fights near the bottom edge of a map lift up so nobody stands behind the command menu
@@ -89,7 +108,8 @@ export const Battle = {
     const allX = [...this.heroes.map(a => a.hx), ...this.enemies.map(e => e.hx)], allY = [...this.heroes.map(a => a.hy - 22), ...this.enemies.map(e => e.hy + 16 - enemyHeight(e.k) - 14), ...this.heroes.map(a => a.hy), ...this.enemies.map(e => e.hy)];
     this.camTX = (Math.min(...allX) + Math.max(...allX)) / 2 + 8 - VW * TILE / 2;
     this.camTY = (Math.min(...allY) + Math.max(...allY)) / 2 + 42 - VH * TILE / 2;
-    this.camTX = Math.max(0, Math.min(m.w * TILE - VW * TILE, this.camTX)); this.camTY = Math.max(0, Math.min(m.h * TILE - VH * TILE, this.camTY));
+    // a map narrower than the view is centred (its edges show the map's border scenery)
+    this.camTX = m.w * TILE <= VW * TILE ? (m.w * TILE - VW * TILE) / 2 : Math.max(0, Math.min(m.w * TILE - VW * TILE, this.camTX)); this.camTY = Math.max(0, Math.min(m.h * TILE - VH * TILE, this.camTY));
     this.cam0 = { x: G.camX, y: G.camY };
     Sound.sfx('battle'); Sound.play(cfg.boss ? MUSIC.boss : MUSIC.battle);
   },
@@ -100,15 +120,14 @@ export const Battle = {
     this.dt = dt;
     if (this.hitStop > 0) { this.hitStop -= dt; return; }
     this.t += dt;
-    for (const r of this.rings) { r.life -= dt; r.r += r.vr * dt; } this.rings = this.rings.filter(r => r.life > 0);
     for (const l of this.lights) l.life -= dt; this.lights = this.lights.filter(l => l.life > 0);
-    if (this.clock && (this.clock.t += dt) > this.clock.life) this.clock = null;
     this.dim += (this.dimT - this.dim) * Math.min(1, dt * 8);
     for (const a of this.heroes) a.hurtT = Math.max(0, (a.hurtT || 0) - dt);
     for (const p of this.pops) { p.t += dt; p.y -= dt * 20 * Math.max(0, 1 - p.t * 2); }
     this.pops = this.pops.filter(p => p.t < 1.2);
     for (const f of this.fx) { if (f.delay && f.delay > 0) { f.delay -= dt; continue; } f.life -= dt; f.x += f.vx * dt; f.y += f.vy * dt; f.vy += (f.g || 0) * dt; }
     this.fx = this.fx.filter(f => f.life > 0);
+    for (const e of this.sheetFx) e.t += dt; this.sheetFx = this.sheetFx.filter(e => e.t < e.dur);
     this.flashT = Math.max(0, this.flashT - dt); this.shakeT = Math.max(0, this.shakeT - dt);
     for (const a of [...this.heroes, ...this.enemies]) { a.flash = Math.max(0, a.flash - dt); if (a.side === 'enemy' && a.dead) a.fade = Math.max(0, a.fade - dt * 1.5); }
 
@@ -237,6 +256,7 @@ export const Battle = {
     if (p.tech && p.tech.revive) p.target = 'deadally';
     const list = this.targetList(p.target);
     if (!list.length) { Sound.sfx('back'); return; }
+    const effect = heroEffectName(p); if (effect) Sheets.effect(effect);
     m.level = 'target'; m.pending = p; m.tIdx = 0;
     if (p.target === 'ally') { // start on the most injured ally
       const weakest = list.filter(isHero).sort((a, b) => a.h.hp / a.st.maxhp - b.h.hp / b.st.maxhp)[0];
@@ -260,6 +280,8 @@ export const Battle = {
     this.co = (function* () {
       if (!ok) { self.say('Couldn\'t escape!'); yield 0.9; self.msg = null; self.phase = 'active'; return; }
       Sound.sfx('back'); self.say('The party fled!');
+      const effect = Sheets.effect('Run');
+      if (effect) for (const a of self.alive(self.heroes)) self.play(a, 0.5, effect);
       for (let i = 0; i < 30; i++) { for (const a of self.heroes) { a.x -= 3; a.dir = 'left'; a.frame = (self.t * 12) | 0; } yield 0; }
       self.active = false; Game.endBattle('run');
     })();
@@ -300,45 +322,68 @@ export const Battle = {
   dissolve(e: EnemyActor): void {
     const pix = enemyPixels(e.k), bx = e.x + 8, by = e.y + 16 - (e.k.shape === 'bat' ? 6 : 0), h = enemyHeight(e.k);
     for (const p of pix) this.fx.push({ x: bx + p.x, y: by + p.y, vx: (Math.random() - 0.5) * 30, vy: -12 - Math.random() * 36, g: -10, life: 0.4 + Math.random() * 0.6, delay: 0.08 + (p.y + h) / h * 0.5, color: p.c, size: 1 });
-    const [mx, my] = this.center(e); this.ring(mx, my, '#ffffff', 2, 140, 0.3); this.light(mx, my, [255, 240, 220], 60, 0.4, 0.8);
+    const [mx, my] = this.center(e); this.light(mx, my, [255, 240, 220], 60, 0.4, 0.8);
+  },
+  /** Plays the current action's drawn effect at the actor. */
+  play(a: Actor, dur = 0.5, sheet?: Sheet): void {
+    const s = sheet ?? this.actionFx;
+    if (!s) return;
+    const [x, y] = this.center(a); this.sheetFx.push({ s, x, y, gz: a.side === 'hero' ? a.y + 15 : a.y + 16, t: 0, dur });
+  },
+  /** which frame of an enemy's sheet to hold for a move: its own named frame if it has one, else wind-up or strike */
+  enemyPose(e: EnemyActor, move: string, phase: 'windup' | 'strike'): number | undefined {
+    const s = Sheets.enemy(e.k.name); if (!s) return undefined;
+    const named = s.names.indexOf(move.toLowerCase().replace(/ /g, '-')); if (named >= 0) return named;
+    const pick = (opts: string[]) => { for (const o of opts) { const i = s.names.indexOf(o); if (i >= 0) return i; } return undefined; };
+    return phase === 'windup' ? pick(['windup', 'squash', 'cast', 'sway']) : pick(['strike', 'lunge', 'lash', 'flare', 'rend', 'cast']);
   },
   center(a: Actor): [number, number] { if (a.side === 'hero') return [a.x + 8, a.y - 1]; const h = enemyHeight(a.k); return [a.x + 8, a.y + 16 - h * 0.5 - (a.k.shape === 'bat' ? 6 : 0)]; },
-  ring(x: number, y: number, c: string, r0 = 2, vr = 120, life = 0.4): void { this.rings.push({ x, y, r: r0, vr, life, max: life, c }); },
   light(x: number, y: number, c: RGB, r = 60, life = 0.5, i = 0.9): void { this.lights.push({ x, y, r, c, life, max: life, i }); },
-  glow(x: number, y: number, vx: number, vy: number, life: number, color: string, size = 1, g = 0): void { this.fx.push({ x, y, vx, vy, life, color, size, g, glow: true }); },
+  // Keep the procedural fallback active for the whole action if its sheet is still loading.
+  glow(x: number, y: number, vx: number, vy: number, life: number, color: string, size = 1, g = 0): void { if (this.actionFx) return; this.fx.push({ x, y, vx, vy, life, color, size, g, glow: true }); },
   heal(dst: Actor, amt: number): void {
     if (dst.side === 'hero') dst.h.hp = Math.min(dst.st.maxhp, dst.h.hp + amt); else dst.hp = Math.min(dst.maxhp, dst.hp + amt);
     this.pop(dst, String(amt), '#7dffa0'); this.sparkle(dst, '#7dffa0');
   },
-  pop(a: Actor, s: string, color: string, dy = 0): void { const top = a.side === 'hero' ? a.y - 18 : a.y + 16 - enemyHeight(a.k) - (a.k.shape === 'bat' ? 6 : 0); this.pops.push({ x: a.x + 8, y: top + dy, s, color, t: 0 }); },
+  pop(a: Actor, s: string, color: string, dy = 0): void { const top = a.side === 'hero' ? a.y - 18 : a.y + 16 - enemyHeight(a.k) - (a.k.shape === 'bat' ? 6 : 0); this.pops.push({ x: a.x + 8, y: top + dy, s, color, t: 0, gz: a.side === 'hero' ? a.y + 15 : a.y + 16 }); },
   burst(x: number, y: number, color: string, n = 10, spd = 60): void { for (let i = 0; i < n; i++) { const an = Math.random() * 6.28, v = spd * (0.4 + Math.random()); this.glow(x, y, Math.cos(an) * v, Math.sin(an) * v, 0.3 + Math.random() * 0.4, color, Math.random() < 0.3 ? 2 : 1); } },
   sparkle(a: Actor, color: string): void { for (let i = 0; i < 12; i++) this.glow(a.x + 2 + Math.random() * 12, a.y + 14 - Math.random() * 6, (Math.random() - 0.5) * 8, -20 - Math.random() * 34, 0.8, color); this.light(a.x + 8, a.y + 6, hexRgb(color), 40, 0.6, 0.7); },
 
   // ---------- action animations (generators) ----------
   *moveTo(a: Actor, tx: number, ty: number, dur: number): Anim {
     const sx = a.x, sy = a.y; let el = 0; a.moving = true;
+    if (a.side === 'enemy' && Math.abs(tx - sx) > 0.5) a.dir = tx < sx ? 'left' : 'right'; // which side-move frames to show
     while (el < dur) { el += this.dt; const k = Math.min(1, el / dur); a.x = sx + (tx - sx) * k; a.y = sy + (ty - sy) * k; a.frame = (this.t * 14) | 0; yield 0; }
     a.moving = false;
   },
   *perform(act: Action): Anim {
+    const effect = act.type === 'enemy' ? act.move.name : heroEffectName(act);
+    this.actionFx = effect ? Sheets.effect(effect) : undefined;
     try { yield* this.performInner(act); }
-    finally { for (const p of act.actors) { p.pose = null; p.moving = false; } this.dimT = 0; }
+    finally { this.actionFx = undefined; for (const p of act.actors) { p.pose = null; p.moving = false; } this.dimT = 0; }
   },
   *performInner(act: Action): Anim {
     if (act.type === 'enemy') {
       const a = act.actor, mv = act.move; this.say(`${a.name}: ${mv.name}`);
-      if (mv.heal) { Sound.sfx('heal'); yield 0.4; this.heal(a, mv.heal); yield 0.6; this.msg = null; return; }
-      if (!mv.magic && mv.target !== 'all') {
-        const t = act.targets[0];
-        yield* this.moveTo(a, t.x + 14, t.y, 0.18); Sound.sfx('hit');
-        const r = this.calcDamage(a, t, mv.power ?? 1, mv.elem, false); this.applyDamage(t, r.dmg, null); this.shakeT = 0.15;
-        yield 0.2; yield* this.moveTo(a, a.hx, a.hy, 0.2);
-      } else {
-        a.flash = 0.5; yield 0.4; Sound.sfx(mv.elem === 'shock' ? 'zap' : mv.elem === 'fire' ? 'fire' : 'magic');
-        for (const t of act.targets) { this.burst(t.x + 8, t.y + 8, a.k.color2, 14); const r = this.calcDamage(a, t, mv.power ?? 1, mv.elem, mv.magic); this.applyDamage(t, r.dmg, null); }
-        this.shakeT = 0.25; yield 0.5;
-      }
-      this.msg = null; yield 0.15; return;
+      try {
+        if (mv.heal) { a.sheetPose = this.enemyPose(a, mv.name, 'strike'); Sound.sfx('heal'); this.play(a, 0.7); yield 0.4; this.heal(a, mv.heal); yield 0.6; this.msg = null; return; }
+        if (!mv.magic && mv.target !== 'all') {
+          const t = act.targets[0];
+          // travel with the sheet's side-move frames when it has them, otherwise hold the wind-up
+          a.sheetPose = Sheets.enemy(a.k.name)?.names.includes('side-move-a') ? undefined : this.enemyPose(a, mv.name, 'windup');
+          yield* this.moveTo(a, t.x + 14, t.y, 0.18); Sound.sfx('hit');
+          a.sheetPose = this.enemyPose(a, mv.name, 'strike'); this.play(t, 0.45);
+          this.burst(...this.center(t), a.k.color2, 10);
+          const r = this.calcDamage(a, t, mv.power ?? 1, mv.elem, false); this.applyDamage(t, r.dmg, null); this.shakeT = 0.15;
+          yield 0.2; a.sheetPose = undefined; yield* this.moveTo(a, a.hx, a.hy, 0.2);
+        } else {
+          a.sheetPose = this.enemyPose(a, mv.name, 'windup'); a.flash = 0.5; yield 0.4; Sound.sfx(mv.elem === 'shock' ? 'zap' : mv.elem === 'fire' ? 'fire' : 'magic');
+          a.sheetPose = this.enemyPose(a, mv.name, 'strike');
+          for (const t of act.targets) { this.play(t, 0.55); this.burst(t.x + 8, t.y + 8, a.k.color2, 14); const r = this.calcDamage(a, t, mv.power ?? 1, mv.elem, mv.magic); this.applyDamage(t, r.dmg, null); }
+          this.shakeT = 0.25; yield 0.5;
+        }
+        this.msg = null; yield 0.15; return;
+      } finally { a.sheetPose = undefined; }
     }
     const hero = act.actor;
     if (act.type === 'attack') {
@@ -347,7 +392,7 @@ export const Battle = {
       const tt = act.targets[0];
       hero.dir = tt.x < hero.x ? 'left' : 'right';
       yield* this.moveTo(hero, tt.x + (tt.x < hero.x ? 14 : -14), tt.y, 0.16);
-      hero.pose = 'attack'; Sound.sfx('hit'); this.slash(tt); this.burst(...this.center(tt), '#ffffff', 6, 60);
+      hero.pose = 'attack'; Sound.sfx('hit'); this.play(tt, 0.4); this.slash(tt); this.burst(...this.center(tt), '#ffffff', 6, 60);
       const r = this.calcDamage(hero, tt, 1, 'phys', false); if (r.tag === 'CRITICAL!') Sound.sfx('crit');
       this.applyDamage(tt, r.dmg, r.tag); this.shakeT = 0.12;
       yield 0.18; hero.pose = null; hero.dir = 'right'; yield* this.moveTo(hero, hero.hx, hero.hy, 0.18); return;
@@ -356,6 +401,7 @@ export const Battle = {
       if (!act.item) return;
       hero.pose = 'cast'; const it = ITEMS[act.item]; this.say(`${hero.name} used ${it.name}`); Sound.sfx('heal'); yield 0.35;
       for (const t of act.targets.filter(isHero)) {
+        this.play(t, 0.6);
         if (it.all) { t.h.hp = t.st.maxhp; t.h.mp = t.st.maxmp; this.sparkle(t, '#ffe080'); this.pop(t, 'FULL', '#7dffa0'); }
         if (it.revive) { t.h.hp = Math.round(t.st.maxhp * 0.5); this.sparkle(t, '#ffffff'); this.pop(t, 'REVIVED', '#7dffa0'); }
         if (it.heal && t.h.hp > 0) this.heal(t, it.heal);
@@ -373,6 +419,7 @@ export const Battle = {
     if (tech.heal || tech.revive) {
       Sound.sfx('heal');
       for (const t of act.targets.filter(isHero)) {
+        this.play(t, 0.65);
         if (tech.revive) { if (t.h.hp <= 0) { t.h.hp = Math.round(t.st.maxhp * 0.4); this.sparkle(t, '#fff'); this.pop(t, 'REVIVED', '#7dffa0'); } }
         else if (t.h.hp > 0) this.heal(t, Math.round(hero.st.mag * (tech.heal ?? 0) * 4 + 25));
       }
@@ -381,6 +428,8 @@ export const Battle = {
     let targets = act.targets.filter(t => !(t.side === 'enemy' && t.dead));
     if (!targets.length) targets = this.alive(this.enemies).slice(0, 1);
     if (!targets.length) { this.msg = null; return; }
+    const fxDur: Record<string, number> = { slash: 0.45, shot: 0.4, spin: 0.45, fire: 0.6, ice: 0.6, zap: 0.5, time: 1.0 };
+    for (const t of targets) this.play(t, fxDur[tech.fx] ?? 0.5);
     yield* this.techFx(tech, hero, act.actors, targets);
     // combined stats for duals
     const src: DamageSource = act.actors.length > 1
@@ -400,20 +449,20 @@ export const Battle = {
     const fx = tech.fx, E = targets.map(t => this.center(t));
     if (fx === 'slash') {
       const t = targets[0]; hero.pose = null; hero.dir = 'right'; yield* this.moveTo(hero, t.x - 14, t.y, 0.12); hero.pose = 'attack';
-      for (let k = 0; k < 3; k++) { Sound.sfx('hit'); this.slash(t, k === 2 ? '#fff4a0' : '#ffffff'); this.burst(E[0][0], E[0][1], '#ffffff', 8, 70); this.ring(E[0][0], E[0][1], '#ffffff', 2, 90, 0.2); this.hitStop = 0.05; yield 0.09; }
+      for (let k = 0; k < 3; k++) { Sound.sfx('hit'); this.slash(t, k === 2 ? '#fff4a0' : '#ffffff'); this.burst(E[0][0], E[0][1], '#ffffff', 8, 70); this.hitStop = 0.05; yield 0.09; }
     } else if (fx === 'shot') {
       hero.pose = 'attack'; Sound.sfx('zap');
       const hx = hero.x + 18, hy = hero.y + 3;
       for (let i = 0; i < 18; i++) { const k = i / 18; this.glow(hx + (E[0][0] - hx) * k, hy + (E[0][1] - hy) * k, 0, 0, 0.08 + k * 0.15, i % 3 ? '#ffd060' : '#ffffff'); }
       this.light(hx, hy, [255, 200, 90], 40, 0.2); yield 0.15;
-      this.burst(E[0][0], E[0][1], '#ffd060', 14, 80); this.ring(E[0][0], E[0][1], '#ffd060', 2, 100, 0.25);
+      this.burst(E[0][0], E[0][1], '#ffd060', 14, 80);
     } else if (fx === 'spin') {
       for (let ti = 0; ti < targets.length; ti++) {
         const t = targets[ti];
         for (const p of actors) { p.dir = 'right'; p.pose = null; yield* this.moveTo(p, t.x - 12, t.y, 0.08); p.pose = 'attack'; }
         Sound.sfx('hit');
         for (let i = 0; i < 16; i++) { const a = i / 16 * 6.283; this.glow(E[ti][0] + Math.cos(a) * 10, E[ti][1] + Math.sin(a) * 6, -Math.sin(a) * 60, Math.cos(a) * 40, 0.3, '#e0f0ff'); }
-        this.slash(t); this.ring(E[ti][0], E[ti][1], '#c8e0ff', 3, 110, 0.25); this.hitStop = 0.04; yield 0.07;
+        this.slash(t); this.hitStop = 0.04; yield 0.07;
       }
     } else if (fx === 'fire') {
       Sound.sfx('fire');
@@ -422,41 +471,30 @@ export const Battle = {
         yield 0.1;
       }
       if (actors.length > 1) { this.flashT = 0.15; for (const t of targets) { actors[0].pose = null; yield* this.moveTo(actors[0], t.x - 12, t.y, 0.08); actors[0].pose = 'attack'; this.slash(t, '#ffb040'); } }
-      for (const [mx, my] of E) this.ring(mx, my, '#ff9020', 3, 130, 0.35);
       yield 0.25;
     } else if (fx === 'ice') {
       Sound.sfx('ice');
       for (const [mx, my] of E) for (let i = 0; i < 16; i++) this.glow(mx - 8 + Math.random() * 16, my - 50 - Math.random() * 30, 0, 160, 0.32 + Math.random() * 0.1, ['#c0f0ff', '#80c8ff', '#ffffff'][i % 3], i % 4 === 0 ? 2 : 1);
       yield 0.35;
       for (const [mx, my] of E) {
-        this.burst(mx, my, '#c0f0ff', 14, 90); this.ring(mx, my, '#a0e0ff', 2, 120, 0.35); this.light(mx, my, [140, 210, 255], 70, 0.5);
+        this.burst(mx, my, '#c0f0ff', 14, 90); this.light(mx, my, [140, 210, 255], 70, 0.5);
         for (let i = 0; i < 6; i++) { const a = i / 6 * 6.283; for (let k = 2; k < 9; k++) this.glow(mx + Math.cos(a) * k, my + Math.sin(a) * k * 0.7, 0, 0, 0.35, k > 6 ? '#ffffff' : '#9ad8ff'); }
       }
       this.hitStop = 0.08;
     } else if (fx === 'zap') {
       for (let k = 0; k < 3; k++) {
         Sound.sfx('zap');
-        for (const [mx, my] of E) { let x = mx, y = my - 60; for (let i = 0; i < 20; i++) { x += Math.round((Math.random() - 0.5) * 6); y += 3; this.glow(x, y, 0, 0, 0.12, i % 3 ? '#fff080' : '#ffffff'); } this.light(mx, my, [255, 240, 140], 80, 0.15, 1); this.ring(mx, my, '#fff080', 2, 90, 0.15); }
+        for (const [mx, my] of E) { let x = mx, y = my - 60; for (let i = 0; i < 20; i++) { x += Math.round((Math.random() - 0.5) * 6); y += 3; this.glow(x, y, 0, 0, 0.12, i % 3 ? '#fff080' : '#ffffff'); } this.light(mx, my, [255, 240, 140], 80, 0.15, 1); }
         this.flashT = 0.06; yield 0.12;
       }
     } else if (fx === 'time') {
       Sound.sfx('rift');
       const cx = E.reduce((s, e) => s + e[0], 0) / E.length, cy = E.reduce((s, e) => s + e[1], 0) / E.length;
-      this.clock = { x: cx, y: cy, t: 0, life: 1.1 }; this.light(cx, cy, [200, 140, 255], 120, 1.2, 1);
+      this.light(cx, cy, [200, 140, 255], 120, 1.2, 1);
       for (let i = 0; i < 60; i++) { const a = i / 60 * 6.283; this.glow(cx + Math.cos(a) * 70, cy + Math.sin(a) * 45, -Math.cos(a) * 110, -Math.sin(a) * 70, 0.6, ['#ffe080', '#c080ff', '#80e0ff'][i % 3]); }
       yield 0.9; Sound.sfx('crit'); this.flashT = 0.35; this.hitStop = 0.12;
-      for (const [mx, my] of E) { this.burst(mx, my, '#ffffff', 24, 130); this.ring(mx, my, '#ffe080', 3, 160, 0.5); }
-      this.ring(cx, cy, '#c080ff', 10, 200, 0.6);
+      for (const [mx, my] of E) { this.burst(mx, my, '#ffffff', 24, 130); }
     }
-  },
-  drawClockFx(g: Ctx, x: number, y: number, t: number): void {
-    x = Math.round(x); y = Math.round(y);
-    const r = Math.round(10 + Math.min(1, t * 2) * 26);
-    g.globalAlpha = Math.max(0, 1 - Math.max(0, t - 0.7) * 3);
-    pring(g, x, y, r, '#ffe080'); pring(g, x, y, r - 3, '#c080ff');
-    for (let i = 0; i < 13; i++) { const a = i / 13 * 6.283 - 1.571; px(g, Math.round(x + Math.cos(a) * (r - 6)) - 1, Math.round(y + Math.sin(a) * (r - 6)) - 1, 2, 2, i === 12 ? '#ff6ad5' : '#ffe080'); }
-    for (const [len, ang, c] of [[r - 8, t * 14, '#ffffff'], [r * 0.5, -t * 5, '#ffe080']] as [number, number, string][]) for (let k = 0; k < len; k++) px(g, Math.round(x + Math.cos(ang) * k), Math.round(y + Math.sin(ang) * k), 1, 1, c);
-    g.globalAlpha = 1;
   },
 
   // ---------- end of battle ----------
@@ -491,45 +529,43 @@ export const Battle = {
   draw() {
     const shx = this.shakeT > 0 ? (Math.random() - 0.5) * 12 : 0, shy = this.shakeT > 0 ? (Math.random() - 0.5) * 12 : 0;
     toWorld();
-    const cx = Math.round(G.camX), cy = Math.round(G.camY), t = this.t, extras = [];
-    for (const e of this.enemies) if (!e.dead) extras.push({ y: e.y, draw: () => drawEnemy(e.k, e.x - cx, e.y - cy, t, { flash: e.flash > 0 }) });
+    const [cx, cy] = worldCam(), t = this.t, extras = [];
+    for (const e of this.enemies) if (!e.dead) extras.push({ y: e.y, draw: () => drawEnemy(e.k, e.x - cx, e.y - cy, t, { flash: e.flash > 0, pose: e.sheetPose, side: e.moving && (e.dir === 'left' || e.dir === 'right') ? e.dir : undefined }) });
     for (const a of this.heroes) {
       const alive = a.h.hp > 0;
       let pose = a.pose || (a.moving || this.phase === 'intro' || this.phase === 'run' ? null : 'ready');
       if (this.phase === 'win' && alive && !a.moving) pose = 'victory';
       if ((a.hurtT ?? 0) > 0 && alive) pose = 'hurt';
-      extras.push({ y: a.y, draw: () => drawHero(a.x - cx, a.y - cy, HEROES[a.id].look, a.dir, a.frame, { pose, flip: a.dir === 'left', flash: a.flash > 0 && (t * 20 | 0) % 2, down: !alive }) });
+      extras.push({ y: a.y, draw: () => drawHero(a.x - cx, a.y - cy, HEROES[a.id].look, a.dir, a.frame, { pose, flip: a.dir === 'left', flash: a.flash > 0 && (t * 20 | 0) % 2, down: !alive, sheet: a.id }) });
     }
     Game.drawWorld(true, extras, this.dim);
+    // drawn effect animations: 4 frames (wind-up, build, impact, dissipate) over each effect's duration
+    for (const e of this.sheetFx) {
+      const p = e.t / e.dur * 4, i = Math.min(3, Math.floor(p)), f = e.s.frames[i], alpha = i === 3 ? Math.max(0, 1 - (p - 3)) : 1;
+      Frame.effects.push({ img: f.c, ...Space.onObject(e.x, e.y, e.gz), px: f.px, py: f.py, scale: FX_SCALE, alpha });
+    }
     const L = this.lights.map(l => ({ x: l.x, y: l.y, r: l.r, c: l.c, i: l.i * Math.min(1, l.life / l.max * 1.5) }));
     for (const a of this.heroes) L.push({ x: a.x + 8, y: a.y + 6, r: 40, c: [255, 236, 210], i: 0.22 });
     Atmos.draw(G.map, cx, cy, L);
-    // spell layer: unlit, mostly additive
-    const g = ctx; g.save();
-    g.globalCompositeOperation = 'lighter';
-    for (const r of this.rings) { g.globalAlpha = Math.max(0, r.life / r.max); pring(g, Math.round(r.x - cx), Math.round(r.y - cy), Math.max(1, Math.round(r.r)), r.c); }
-    g.globalAlpha = 1;
-    if (this.clock) this.drawClockFx(g, this.clock.x - cx, this.clock.y - cy, this.clock.t);
-    for (const f of this.fx) {
-      const x = Math.round(f.x - cx), y = Math.round(f.y - cy), a = (f.delay ?? 0) > 0 ? 1 : Math.max(0, Math.min(1, f.life * 3));
-      if (f.glow) { g.globalCompositeOperation = 'lighter'; g.globalAlpha = a * 0.3; px(g, x - 1, y - 1, f.size + 2, f.size + 2, f.color); g.globalAlpha = a; px(g, x, y, f.size, f.size, f.color); }
-      else { g.globalCompositeOperation = 'source-over'; g.globalAlpha = a; px(g, x, y, f.size, f.size, f.color); }
-    }
-    g.restore();
-    // pixel arrows: targets (white) and the hero whose command menu is open (gold)
-    const arrow = (x: number, y: number, col: string) => { x = Math.round(x); y = Math.round(y + Math.sin(t * 10) * 1.5); px(g, x - 4, y - 1, 9, 1, PAL.ink); for (let i = 0; i < 4; i++) { px(g, x - 4 + i, y + i, 9 - i * 2, 1, PAL.ink); px(g, x - 3 + i, y + i, 7 - i * 2, 1, col); } px(g, x, y + 4, 1, 1, PAL.ink); };
+    // spell debris and sparks become 3D points
+    for (const f of this.fx) Frame.particles.push({ ...Space.raised(f.x, f.y, 12), c: f.color, a: (f.delay ?? 0) > 0 ? 1 : Math.max(0, Math.min(1, f.life * 3)), add: !!f.glow });
     const top = (a: Actor) => a.side === 'hero' ? a.y - 26 : a.y + 16 - enemyHeight(a.k) - 6 - (a.k.shape === 'bat' ? 6 : 0);
-    const m = this.menu;
+    const m = this.menu, ground = (a: Actor) => a.side === 'hero' ? a.y + 15 : a.y + 16;
+    // which actors get an arrow: the targets being chosen (white), or whoever's command menu is open (gold)
+    const arrows: [Actor, string][] = [];
     if (m && m.level === 'target' && m.pending) {
       const list = this.targetList(m.pending.target), multi = m.pending.target === 'enemies' || m.pending.target === 'allies';
-      for (const a of (multi ? list : [list[m.tIdx]])) if (a) arrow(a.x + 8 - cx, top(a) - cy, PAL.white);
-    } else if (m) arrow(m.actor.x + 8 - cx, top(m.actor) - cy, PAL.gold);
+      for (const a of (multi ? list : [list[m.tIdx]])) if (a) arrows.push([a, PAL.white]);
+    } else if (m) arrows.push([m.actor, PAL.gold]);
     toScreen(); blitWorld(shx, shy);
-    if (this.flashT > 0) { ctx.fillStyle = `rgba(255,255,255,${Math.min(0.8, this.flashT * 1.5)})`; ctx.fillRect(0, 0, W, H); }
+    // the arrows go on the UI above each actor's head (drawn in the world they'd hide behind the sprite)
+    for (const [a, col] of arrows) { const [sx, sy] = toUi(a.x + 8, top(a), ground(a)); arrowUi(sx, sy + Math.sin(t * 10) * 4, col); }
+    if (this.flashT > 0) fillScreen(`rgba(255,255,255,${Math.min(0.8, this.flashT * 1.5)})`);
     for (const p of this.pops) {
       const bounce = p.t < 0.25 ? -Math.sin(p.t / 0.25 * Math.PI) * 18 : 0;
       ctx.globalAlpha = Math.max(0, Math.min(1, (1.2 - p.t) * 3));
-      text(p.s, (p.x - cx) * S, (p.y - cy) * S - 12 + bounce, p.color, p.s.length > 5 ? 14 : 20, 'center');
+      const [sx, sy] = toUi(p.x, p.y, p.gz);
+      text(p.s, sx, sy - 12 + bounce, p.color, p.s.length > 5 ? 14 : 20, 'center');
     }
     ctx.globalAlpha = 1;
     this.drawUI();
@@ -539,12 +575,27 @@ export const Battle = {
     if (this.phase === 'intro') return;
     // party panel
     uiWindow(330, 540, 620, 170);
+    // full HP/MP in place of the ATB gauges when they don't matter: after the battle, and while choosing a tech or
+    // an item (the gauges are frozen in submenus anyway), so you can see who needs a Tonic or Ether, or who has
+    // the MP for a dual tech
+    const subMenu = !!m && (m.level === 'item' || m.level === 'tech' || (m.level === 'target' && (m.pending?.type === 'item' || m.pending?.type === 'tech')));
+    const fullView = this.phase === 'win' || this.phase === 'lose' || subMenu;
     this.heroes.forEach((a, i) => {
       const y = 560 + i * 48, h = a.h, dead = h.hp <= 0;
+      if (fullView) {
+        // after a level-up the maxima are fresh, so read them from heroStats
+        const st = heroStats(h);
+        text(a.name, 350, y + 4, dead ? '#ff6060' : m && m.actor === a ? '#ffe050' : '#fff');
+        text(`HP ${h.hp}/${st.maxhp}`, 500, y + 4, dead ? '#ff6060' : h.hp < st.maxhp * 0.3 && subMenu ? '#ffd060' : '#fff', 16);
+        text(`MP ${h.mp}/${st.maxmp}`, 740, y + 4, '#a0d0ff', 16);
+        return;
+      }
       text(a.name, 350, y + 4, dead ? '#ff6060' : m && m.actor === a ? '#ffe050' : '#fff');
-      text(`${h.hp}`, 560, y + 4, dead ? '#ff6060' : h.hp < a.st.maxhp * 0.3 ? '#ffd060' : '#fff', 16, 'right');
-      text(`/${a.st.maxhp}`, 565, y + 8, '#a0a8d0', 10);
-      text(`${h.mp}`, 700, y + 4, '#a0d0ff', 16, 'right'); text('MP', 705, y + 8, '#a0a8d0', 10);
+      // "hp/max" reads as one unit: the max (muted) is right-aligned to the column, the hp sits flush against it
+      const maxS = `/${a.st.maxhp}`, hpEnd = 615 - measure(maxS, 16);
+      text(`${h.hp}`, hpEnd, y + 4, dead ? '#ff6060' : h.hp < a.st.maxhp * 0.3 ? '#ffd060' : '#fff', 16, 'right');
+      text(maxS, hpEnd, y + 4, '#a0a8d0', 16);
+      text(`${h.mp}`, 700, y + 4, '#a0d0ff', 16, 'right'); text('MP', 705, y + 4, '#a0a8d0', 10);
       bar(760, y + 6, 170, 14, a.atb / 100, a.atb >= 100 ? '#ffe050' : '#40b0ff');
     });
     // command windows
@@ -568,6 +619,7 @@ export const Battle = {
         const sel = m.sub, start = Math.max(0, Math.min(sel - 2, rows.length - 4));
         uiWindow(10, 330, 600, 200);
         text(isTech ? `${m.actor.name}'s Techs` : 'Items', 30, 345, '#ffe050', 14);
+        if (isTech) { const st = heroStats(m.actor.h); text(`MP ${m.actor.h.mp}/${st.maxmp}`, 580, 345, '#a0d0ff', 14, 'right'); }
         rows.slice(start, start + 4).forEach((r, j) => {
           const i = start + j, y = 375 + j * 36;
           text(r.label, 60, y, r.color, 16); text(r.right, 580, y, r.rightColor, 14, 'right');
@@ -578,10 +630,28 @@ export const Battle = {
         text('Z: use  X: back', 30, 680, '#a0a8d0', 10);
       }
       if (m.level === 'target' && m.pending) {
-        const tg = m.pending.target, list = this.targetList(tg), cur = list[m.tIdx];
+        const p = m.pending, tg = p.target, list = this.targetList(tg), cur = list[m.tIdx];
         const name = tg === 'enemies' ? 'All enemies' : tg === 'allies' ? 'All allies' : cur ? cur.name : '';
-        uiWindow(330, 470, 620, 60); text(name, 640, 490, '#fff', 16, 'center');
-        if (cur && cur.side === 'enemy' && tg === 'enemy') bar(780, 494, 150, 10, cur.hp / cur.maxhp, '#ff5050');
+        // techs get a second line showing what each caster's MP drops to
+        const tech = p.type === 'tech' ? p.tech : undefined;
+        const casters = tech ? (p.dual && p.parts ? p.parts : [m.actor]) : [];
+        const ly = tech ? 480 : 490;
+        uiWindow(330, 470, 620, 60);
+        if (cur && cur.side === 'hero' && (tg === 'ally' || tg === 'deadally')) {
+          // a single ally: name on the left, current/max HP and MP on the right (so Ether/heal targets show what they'll restore)
+          const dead = cur.h.hp <= 0;
+          text(name, 360, ly, dead ? '#ff6060' : '#fff', 16);
+          text(`HP ${cur.h.hp}/${cur.st.maxhp}`, 560, ly + 2, dead ? '#ff6060' : '#fff', 14);
+          text(`MP ${cur.h.mp}/${cur.st.maxmp}`, 770, ly + 2, '#a0d0ff', 14);
+        } else {
+          text(name, 640, ly, '#fff', 16, 'center');
+          if (cur && cur.side === 'enemy' && tg === 'enemy') bar(780, ly + 4, 150, 10, cur.hp / cur.maxhp, '#ff5050');
+        }
+        if (tech) {
+          // dual/triple techs: parts are in the same order as the tech's per-member MP costs
+          const costs = casters.map((a, i) => `${a.name} ${a.h.mp}→${a.h.mp - (isDual(tech) ? tech.mp[i] : tech.mp)}`);
+          text('MP   ' + costs.join('   '), 360, 503, '#a0d0ff', 12);
+        }
       }
     }
     if (this.msg) { uiWindow(180, 20, 600, 60); text(this.msg.s, 480, 42, '#fff', 18, 'center'); }
@@ -594,6 +664,14 @@ export const Battle = {
     }
   },
 };
+/** a point given the 2D way (x, y on the flat view) on an actor whose feet are on ground line gz, to UI coordinates */
+function toUi(x: number, y: number, gz: number): [number, number] { return Space.toUi(Space.onObject(x, y, gz)); }
+/** the battle pointer, drawn on the UI at 3x pixels with its tip at (x, y) */
+function arrowUi(x: number, y: number, col: string): void {
+  const g = ctx, k = S; x = Math.round(x); y = Math.round(y);
+  const r = (dx: number, dy: number, w: number, c: string) => { g.fillStyle = c; g.fillRect(x + dx * k, y + dy * k, w * k, k); };
+  r(-4, -5, 9, PAL.ink); for (let i = 0; i < 4; i++) { r(-4 + i, -4 + i, 9 - i * 2, PAL.ink); r(-3 + i, -4 + i, 7 - i * 2, col); } r(0, 0, 1, PAL.ink);
+}
 export function techDesc(t: Tech | DualTech): string {
   if (t.revive) return 'Revives a fallen ally';
   if (t.heal) return t.target === 'allies' ? 'Heals all allies' : 'Heals one ally';

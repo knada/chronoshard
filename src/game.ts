@@ -1,8 +1,12 @@
-import { H, Input, Sound, TILE, VH, VW, W, ctx } from './engine.js';
-import { PAL, cursor, gridSprite, pixShadow, px, text, uiWindow, wrapText } from './pixel.js';
+import { Frame, H, Input, Sound, TILE, TOPX, UX, VH, VW, W, ctx, fillScreen, snapPx } from './engine.js';
+import { Cam } from './diorama.js';
+import { Space } from './space.js';
+import type { Vec3 } from './space.js';
+import { PAL, blit, cursor, gridSprite, mkCanvas, pixShadow, px, text, uiWindow, wrapText } from './pixel.js';
 import { PORTRAIT_OF, drawHero, drawPortrait } from './sprites.js';
 import { drawEnemy } from './enemies.js';
-import { drawMapOverlay, drawMapTiles, isSolidTile, tileAt } from './tiles.js';
+import { Sheets } from './sheets.js';
+import { isSolidTile, tileAt } from './tiles.js';
 import { ENEMIES, EVENTS, HEROES, ITEMS, MAPS, MUSIC, SHOP_STOCK, TALK } from './data.js';
 import { Battle, heroStats, knownTechs, xpForLevel } from './battle.js';
 
@@ -10,6 +14,13 @@ import type { Dir, Drawable, EnemySpawn, Flags, HeroId, HeroState, Inventory, It
 import type { BattleCfg } from './battle.js';
 
 export type Mode = 'title' | 'field' | 'battle' | 'menu' | 'shop' | 'ending';
+/**
+ * the camera offset world drawing uses: positions are drawn at (x - cx, y - cy). In 3D the drawing window reaches TOPX
+ * rows above the view, so effects in the distant part of the scene still have somewhere to be drawn.
+ */
+/** 3D: each rift's animation canvas */
+const RIFTS: HTMLCanvasElement[] = [];
+export function worldCam(): [number, number] { return [snapPx(G.camX), snapPx(G.camY) - TOPX]; }
 export interface Player { x: number; y: number; dir: Dir; frame: number; walk: number }
 export interface TrailPoint { x: number; y: number; dir: Dir; frame?: number }
 /** an NPC placed on the current map, with its wander state */
@@ -17,8 +28,8 @@ export interface NpcState extends NpcDef { px: number; py: number; hx: number; h
 /** an enemy roaming the current map; touching it starts a battle */
 export interface Foe { def: EnemySpawn; x: number; y: number; hx: number; hy: number; t: number; vx: number; vy: number; cool: number }
 export interface Dialog { who: string; full: string; shown: number; lines: string[]; lw?: number }
-/** a story script being played: current command, wait timer, open dialogue, and whether it waits on a battle/shop/warp */
-export interface ScriptRun { cmds: Script; i: number; wait: number; dlg: Dialog | null; block?: boolean }
+/** a story script being played: current command, wait timer, open dialogue, whether it waits on a battle/shop/warp, and whether its dialogues show the party panel */
+export interface ScriptRun { cmds: Script; i: number; wait: number; dlg: Dialog | null; block?: boolean; status?: boolean }
 export interface MenuState { tab: number; idx: number; sub: { item: ItemId; who: number } | null; msg: string; focus?: 'items' | null }
 export interface SaveData { party: HeroState[]; inv: Inventory; gold: number; flags: Flags; map: string; x: number; y: number }
 export interface GameState {
@@ -41,6 +52,8 @@ export const G: GameState = {
 export const BOSS_WIN: Record<string, string> = { boss1: 'golemWin', boss2: 'hollowWin' };
 export const CHEST_GRIDS = [['..dddddddddddd..', '.dwwwwwwwwwwwwd.', '.dwWWWWWWWWWWwd.', '.yyyyyyyyyyyyyy.', '.dwwwwwyywwwwwd.', '.dwwwwwYYwwwwwd.', '.dWWWWWWWWWWWWd.', '.dWWWWWWWWWWWWd.', '.yyyyyyyyyyyyyy.', '..dddddddddddd..'],
   ['..dddddddddddd..', '.dkkkkkkkkkkkkd.', '.dkkkgkkkkgkkkd.', '.yyyyyyyyyyyyyy.', '.dwwwwwyywwwwwd.', '.dwwwwwYYwwwwwd.', '.dWWWWWWWWWWWWd.', '.dWWWWWWWWWWWWd.', '.yyyyyyyyyyyyyy.', '..dddddddddddd..']];
+/** how wide the drawn treasure chest is, in art pixels (a tile is 16; a hero is about 36 tall) */
+const CHEST_W = 26;
 export const CHEST_PAL = { d: PAL.bark, w: PAL.tan, W: PAL.wood, y: PAL.gold, Y: '#b08020', k: '#1a0e0a', g: '#ffe890' };
 export let CHEST_SPR: HTMLCanvasElement[] | null = null;
 
@@ -59,6 +72,8 @@ export const Game = {
     try { localStorage.setItem(SAVE_KEY, JSON.stringify(d)); return true; } catch (e) { return false; }
   },
   hasSave() { try { return !!localStorage.getItem(SAVE_KEY); } catch (e) { return false; } },
+  /** the stored save without loading it (for the title screen's summary), or null */
+  peekSave(): SaveData | null { try { return JSON.parse(localStorage.getItem(SAVE_KEY) ?? 'null'); } catch { return null; } },
   load() {
     let d: SaveData | null; try { d = JSON.parse(localStorage.getItem(SAVE_KEY) ?? 'null'); } catch { d = null; }
     if (!d) return this.newGame();
@@ -82,10 +97,15 @@ export const Game = {
     Sound.play(MUSIC[m.music]); this.centerCam();
   },
   ptile() { return { x: Math.floor((G.player.x + 8) / TILE), y: Math.floor((G.player.y + 12) / TILE) }; },
-  centerCam() {
+  /** points the camera at the player: instantly (map loads), or easing toward them when given the frame time */
+  centerCam(dt?: number) {
     const m = G.map, mw = m.w * TILE, mh = m.h * TILE;
-    G.camX = mw <= VW * TILE ? (mw - VW * TILE) / 2 : Math.max(0, Math.min(mw - VW * TILE, G.player.x + 8 - VW * TILE / 2));
-    G.camY = mh <= VH * TILE ? (mh - VH * TILE) / 2 : Math.max(0, Math.min(mh - VH * TILE, G.player.y + 8 - VH * TILE / 2));
+    const tx = mw <= VW * TILE ? (mw - VW * TILE) / 2 : Math.max(0, Math.min(mw - VW * TILE, G.player.x + 8 - VW * TILE / 2));
+    const ty = mh <= VH * TILE ? (mh - VH * TILE) / 2 : Math.max(0, Math.min(mh - VH * TILE, G.player.y + 8 - VH * TILE / 2));
+    if (dt === undefined) { G.camX = tx; G.camY = ty; return; }
+    const k = 1 - Math.exp(-dt * 10); // ~100ms of lag: a gentle glide that settles quickly
+    G.camX += (tx - G.camX) * k; G.camY += (ty - G.camY) * k;
+    if (Math.abs(tx - G.camX) < 0.05) G.camX = tx; if (Math.abs(ty - G.camY) < 0.05) G.camY = ty;
   },
   visibleNpcs() { return G.npcs.filter(n => !(n.hideIf && G.flags[n.hideIf])); },
   blocked(x: number, y: number, self: Player | NpcState): boolean {
@@ -115,6 +135,7 @@ export const Game = {
       case 'join': if (!G.party.some(p => p.id === c[1])) { const lv = Math.max(1, Math.round(G.party.reduce((a, p) => a + p.lv, 0) / G.party.length)); G.party.push(newHero(c[1], lv)); } break;
       case 'flag': G.flags[c[1]] = true; break;
       case 'sfx': Sound.sfx(c[1]); break;
+      case 'status': s.status = true; break;
       case 'heal': for (const h of G.party) { const st = heroStats(h); h.hp = st.maxhp; h.mp = st.maxmp; } Sound.sfx('heal'); break;
       case 'wait': s.wait = c[1]; s.i++; return;
       case 'shake': G.shake = c[1]; break;
@@ -139,7 +160,7 @@ export const Game = {
     const cfg = Battle.cfg;
     if (cfg.foe) {
       if (result === 'win') { G.foes = G.foes.filter(f => f !== cfg.foe); if (cfg.foe.def.flag) G.flags[cfg.foe.def.flag] = true; }
-      else { cfg.foe.cool = 3; cfg.foe.x = cfg.foe.hx; cfg.foe.y = cfg.foe.hy; }
+      else { cfg.foe.cool = 3; cfg.foe.x = cfg.foe.hx; cfg.foe.y = cfg.foe.hy; cfg.foe.vx = cfg.foe.vy = 0; }
     }
     Sound.play(MUSIC[G.map.music]);
     if (G.script && G.script.block) { if (result !== 'win') { G.script = null; } else G.script.block = false; }
@@ -172,10 +193,11 @@ export const Game = {
       } else p.frame = 0;
       if (Input.pressed('ok')) this.interact();
     }
-    this.centerCam();
+    this.centerCam(dt);
     // NPC wander
     for (const n of this.visibleNpcs()) {
-      if (!n.wander || busy) continue;
+      if (!n.wander) continue;
+      if (busy) { n.frame = 0; continue; }
       n.wt -= dt;
       if (n.wt <= 0) { n.wt = 1.5 + Math.random() * 2.5; const dirs: [Dir, number, number][] = [['up', 0, -1], ['down', 0, 1], ['left', -1, 0], ['right', 1, 0]], d = dirs[(Math.random() * 4) | 0]; n.dir = d[0]; n.mv = { dx: d[1], dy: d[2], t: 0.4 }; }
       if (n.mv && n.mv.t > 0) {
@@ -185,14 +207,19 @@ export const Game = {
     }
     // field enemies
     for (const f of G.foes) {
-      f.t += dt; f.cool = Math.max(0, f.cool - dt);
+      f.t += dt; f.cool = Math.max(0, f.cool - dt); f.vx = f.vy = 0;
       if (busy) continue;
       const dist = Math.hypot(f.x - p.x, f.y - p.y), big = ENEMIES[f.def.kind].size;
       if (!f.def.static && !f.def.boss) {
         let tx, ty;
         if (dist < 64 && f.cool <= 0) { tx = p.x; ty = p.y; } else { tx = f.hx + Math.cos(f.t * 0.7) * 16; ty = f.hy + Math.sin(f.t * 1.1) * 12; }
         const a = Math.atan2(ty - f.y, tx - f.x), sp = dist < 64 && f.cool <= 0 ? 40 : 18, d = Math.hypot(tx - f.x, ty - f.y);
-        if (d > 1) { const nx = f.x + Math.cos(a) * sp * dt, ny = f.y + Math.sin(a) * sp * dt; if (!isSolidTile(tileAt(G.map, Math.floor((nx + 8) / TILE), Math.floor((ny + 12) / TILE)))) { f.x = nx; f.y = ny; } }
+        if (d > 1) {
+          const vx = Math.cos(a) * sp, vy = Math.sin(a) * sp, nx = f.x + vx * dt, ny = f.y + vy * dt;
+          if (!isSolidTile(tileAt(G.map, Math.floor((nx + 8) / TILE), Math.floor((ny + 12) / TILE)))) {
+            f.x = nx; f.y = ny; f.vx = vx; f.vy = vy;
+          }
+        }
       }
       if (f.cool <= 0 && dist < 12 + (big - 1) * 14) { this.startFieldBattle(f); return; }
     }
@@ -228,28 +255,52 @@ export const Game = {
 
   // ---------- drawing ----------
   drawWorld(inBattle: boolean, extras: Drawable[] = [], dim = 0): void {
-    const m = G.map, cx = Math.round(G.camX), cy = Math.round(G.camY), g = ctx;
-    drawMapTiles(m, cx, cy, G.t);
-    if (!CHEST_SPR) CHEST_SPR = [gridSprite(CHEST_GRIDS[0], CHEST_PAL), gridSprite(CHEST_GRIDS[1], CHEST_PAL)];
-    for (const c of m.chests || []) { const x = c.x * TILE - cx, y = c.y * TILE - cy; pixShadow(g, x + 8, y + 15, 14); g.drawImage(CHEST_SPR[G.flags[c.id] ? 1 : 0], x, y + 2); }
-    for (const r of m.rifts || []) if (G.flags[r.flag]) this.drawRift(r.x * TILE - cx + 8, r.y * TILE - cy + 8);
-    if (dim > 0.01) { g.fillStyle = `rgba(8,4,20,${dim})`; g.fillRect(0, 0, VW * TILE, VH * TILE); }
-    const list = this.visibleNpcs().map(n => ({ y: n.py, draw: () => drawHero(n.px - cx, n.py - cy, n.look, n.dir, n.frame) })).concat(extras);
+    const m = G.map, [cx, cy] = worldCam(), g = ctx;
+    Frame.map = m; Frame.drawCamX = cx; Frame.drawCamY = cy;
+    Frame.focusX = snapPx(G.camX) + VW * TILE / 2; Frame.focusY = snapPx(G.camY) + VH * TILE / 2;
+    Cam.update(Frame.focusX, Frame.focusY); // so this frame's UI can project onto the 3D view
+    Frame.seeThrough = inBattle ? null : this.playerMiddle();
+    const chest = m.chests?.length ? Sheets.prop('chest') : undefined, chestScale = CHEST_W / (chest?.frames[0]?.c.width ?? CHEST_W);
+    for (const c of m.chests || []) {
+      const x = c.x * TILE - cx, y = c.y * TILE - cy, state = G.flags[c.id] ? 1 : 0;
+      const frame = chest?.frames[state];
+      pixShadow(g, x + 8, y + 15, frame ? CHEST_W - 4 : 14);
+      if (frame) blit(frame.c, x + 8 - frame.px * chestScale, y + 16 - frame.py * chestScale, frame.py, chestScale);
+      else {
+        CHEST_SPR ??= CHEST_GRIDS.map(rows => gridSprite(rows, CHEST_PAL));
+        blit(CHEST_SPR[state], x, y + 2, 14);
+      }
+    }
+    (m.rifts || []).forEach((r, ri) => { // 3D: the rift animates on its own little canvas, shown as a glowing billboard
+      if (!G.flags[r.flag]) return;
+      const c = RIFTS[ri] ??= mkCanvas(40, 48)[0], rg = c.getContext('2d')!; rg.clearRect(0, 0, 40, 48); this.drawRift(20, 24, rg);
+      const X = r.x * TILE + 8, gz = r.y * TILE + 16;
+      const mid = Space.onObject(X, r.y * TILE + 8, gz); // the rift hangs at the middle of its tile
+      Frame.effects.push({ img: c, ...mid, px: 20, py: 24, scale: 1, alpha: 1, dynamic: true });
+      Frame.glows.push({ ...mid, r: 30, c: [190, 120, 255], a: 0.55 });
+    });
+    Frame.dim = dim; // the 3D shader darkens the scenery but not the fighters
+    // whoever is speaking moves their mouth while their line types out
+    const dlg = G.script?.dlg, speaker = dlg && dlg.shown < dlg.full.length && (G.t * 8 | 0) % 2 ? Sheets.speaker(dlg.who) : undefined;
+    const list = this.visibleNpcs().map(n => ({ y: n.py, draw: () => drawHero(n.px - cx, n.py - cy, n.look, n.dir, n.frame, { sheet: n.id, talk: !!speaker && Sheets.char(n.id) === speaker }) })).concat(extras);
     if (!inBattle) {
-      for (const f of G.foes) { const k = ENEMIES[f.def.kind]; list.push({ y: f.y, draw: () => drawEnemy(k, f.x - cx, f.y - cy, f.t, { flash: f.cool > 0 && (G.t * 10 | 0) % 2 === 1 }) }); }
+      for (const f of G.foes) {
+        const k = ENEMIES[f.def.kind], side = Math.abs(f.vx) > Math.abs(f.vy) ? (f.vx < 0 ? 'left' : 'right') : undefined;
+        list.push({ y: f.y, draw: () => drawEnemy(k, f.x - cx, f.y - cy, f.t, { side, flash: f.cool > 0 && (G.t * 10 | 0) % 2 === 1 }) });
+      }
       const moving = (Input.down.up || Input.down.down || Input.down.left || Input.down.right) && !G.script;
       for (let i = G.party.length - 1; i >= 0; i--) {
         const h = G.party[i], pos = i === 0 ? G.player : G.trail[Math.min(G.trail.length - 1, i * 9)];
         const fr = i === 0 ? G.player.frame : moving ? G.player.frame + i : 0;
-        list.push({ y: pos.y + (i === 0 ? 0.1 : -i * 0.01), draw: () => drawHero(pos.x - cx, pos.y - cy, HEROES[h.id].look, pos.dir, fr) });
+        list.push({ y: pos.y + (i === 0 ? 0.1 : -i * 0.01), draw: () => drawHero(pos.x - cx, pos.y - cy, HEROES[h.id].look, pos.dir, fr, { sheet: h.id }) });
       }
     }
     list.sort((a, b) => a.y - b.y).forEach(o => o.draw());
     if (inBattle) g.globalAlpha = 0.45;
-    drawMapOverlay(m, cx, cy); g.globalAlpha = 1;
+    g.globalAlpha = 1;
   },
-  drawRift(x: number, y: number): void {
-    const t = G.t, g = ctx; x = Math.round(x); y = Math.round(y);
+  drawRift(x: number, y: number, g: CanvasRenderingContext2D = ctx): void {
+    const t = G.t; x = snapPx(x); y = snapPx(y);
     const cols = ['#2a0c50', '#6a2ab8', '#a868f0', '#e0c8ff', '#ffffff'];
     for (let i = 0; i < 5; i++) {
       const rx = 7 - i * 1.4 + Math.sin(t * 4 + i) * 0.8, ry = 11 - i * 2.2; g.fillStyle = cols[i];
@@ -259,10 +310,12 @@ export const Game = {
   },
   drawDialog() {
     const s = G.script; if (!s || !s.dlg) return;
-    const d = s.dlg, y = G.player.y - G.camY > VH * TILE * 0.55 ? 18 : 516;
+    const [psx, psy] = this.playerOnScreen(), d = s.dlg, y = psy > H * 0.55 ? 18 : 516;
     const hasP = d.who && (PORTRAIT_OF[d.who] || d.who === 'Hollow King' || d.who === '???');
-    if (hasP) drawPortrait(d.who, 18, y + 24, G.t);
-    const x0 = hasP ? 162 : 18, w = 942 - x0;
+    // full screen width: from 18px inside the left edge to 18px inside the right edge
+    const L = 18 - UX, R = 942 + UX;
+    if (hasP) drawPortrait(d.who, L, y + 24, G.t);
+    const x0 = hasP ? L + 144 : L, w = R - x0;
     if (!d.lines || d.lw !== w) { d.lines = wrapText(d.full, w - 72, 16); d.lw = w; }
     uiWindow(x0, y, w, 186);
     let off = 0;
@@ -270,10 +323,32 @@ export const Game = {
     let left = Math.floor(d.shown);
     d.lines.slice(0, 4).forEach((ln, i) => { const part = ln.slice(0, Math.max(0, left)); left -= ln.length + 1; text(part, x0 + 33, y + 30 + off + i * 30, '#fff', 16); });
     if (d.shown >= d.full.length && (G.t * 2 | 0) % 2) text('▼', x0 + w - 42, y + 150, '#fff', 16);
+    // inns show party HP/MP next to the dialogue, on the side away from the player so they stay visible
+    if (s.status) { const ph = 40 + G.party.length * 36, px0 = psx > W / 2 ? 18 - UX : 522 + UX; this.drawPartyPanel(px0, y > 100 ? y - ph - 8 : y + 194, 420, 110, 268); }
   },
   drawFieldHud() {
     if (G.banner) { const a = Math.min(1, G.banner.t); ctx.globalAlpha = a; uiWindow(280, 30, 400, 80); text(G.banner.era, 480, 46, '#ffe050', 12, 'center'); text(G.banner.name, 480, 72, '#fff', 18, 'center'); ctx.globalAlpha = 1; }
-    if (!G.script) text('Z: talk/check   C: menu', 950, 700, 'rgba(255,255,255,0.55)', 10, 'right');
+    if (!G.script) text('Z: talk/check   C: menu', 950 + UX, 700, 'rgba(255,255,255,0.55)', 10, 'right'); // right edge of the screen
+    if (!G.script) this.drawPartyHud();
+  },
+  /** the player's middle in UI coordinates (projected through the 3D camera in the diorama) */
+  playerOnScreen(): [number, number] { return Space.toUi(this.playerMiddle()); },
+  /** the lead character's middle in the world: 14 px up from their feet */
+  playerMiddle(): Vec3 { return Space.onObject(G.player.x + 8, G.player.y + 1, G.player.y + 15); },
+  /** compact party HP/MP in the screen's bottom-left corner; goes see-through when the player walks behind it */
+  drawPartyHud() {
+    const w = 384, h = 32 + G.party.length * 24, x = 18 - UX, y = H - 16 - h;
+    const [sx, sy] = this.playerOnScreen();
+    const behind = sx > x - 30 && sx < x + w + 30 && sy > y - 40 && sy < y + h + 60;
+    ctx.globalAlpha = behind ? 0.3 : 0.9;
+    uiWindow(x, y, w, h);
+    G.party.forEach((hs, i) => {
+      const st = heroStats(hs), ry = y + 16 + i * 24, dead = hs.hp <= 0;
+      text(HEROES[hs.id].name, x + 24, ry, dead ? '#ff6060' : '#fff', 12);
+      text(`HP ${hs.hp}/${st.maxhp}`, x + 100, ry, dead ? '#ff6060' : hs.hp < st.maxhp * 0.3 ? '#ffd060' : '#fff', 12);
+      text(`MP ${hs.mp}/${st.maxmp}`, x + w - 24, ry, '#a0d0ff', 12, 'right');
+    });
+    ctx.globalAlpha = 1;
   },
 
   // ---------- pause menu ----------
@@ -318,19 +393,19 @@ export const Game = {
   },
   drawMenu() {
     const m = G.menu, tabs = ['Party', 'Items', 'Save', 'Close'];
-    ctx.fillStyle = 'rgba(0,0,20,0.5)'; ctx.fillRect(0, 0, W, H);
+    fillScreen('rgba(0,0,20,0.5)');
     uiWindow(20, 20, 920, 70);
     tabs.forEach((s, i) => { text(s, 90 + i * 220, 46, i === m.tab ? '#ffe050' : '#fff', 18); if (i === m.tab && !m.focus) cursor(60 + i * 220, 48, G.t); });
     uiWindow(20, 100, 920, 520);
     if (m.tab === 0 || m.tab === 2 || m.tab === 3) {
       G.party.forEach((h, i) => {
         const st = heroStats(h), y = 125 + i * 160, b = HEROES[h.id];
-        ctx.save(); ctx.scale(4, 4); drawHero(14, y / 4 + 13, b.look, 'down', 0, { down: h.hp <= 0, noShadow: true }); ctx.restore();
+        ctx.save(); ctx.scale(4, 4); drawHero(14, y / 4 + 13, b.look, 'down', 0, { down: h.hp <= 0, noShadow: true, sheet: h.id }); ctx.restore();
         text(`${b.name}`, 150, y + 8, '#ffe050', 18); text(`Lv ${h.lv}`, 330, y + 8, '#fff', 16);
         text(`HP ${h.hp}/${st.maxhp}`, 150, y + 44, h.hp <= 0 ? '#ff6060' : '#fff', 14); text(`MP ${h.mp}/${st.maxmp}`, 150, y + 72, '#a0d0ff', 14);
         const nx = xpForLevel(h.lv + 1); text(`Next Lv: ${nx - h.xp} XP`, 150, y + 100, '#c0c8f0', 12);
         text(`ATK ${st.atk}  DEF ${st.def}`, 480, y + 44, '#fff', 14); text(`MAG ${st.mag}  SPD ${st.spd}`, 480, y + 72, '#fff', 14);
-        wrapText('Techs: ' + knownTechs(h).map(t => t.name).join(', '), 420, 10).slice(0, 2).forEach((ln, j) => text(ln, 480, y + 100 + j * 18, '#c0c8f0', 10));
+        wrapText('Techs: ' + knownTechs(h).map(t => `${t.name} ${t.mp}MP`.replace(/ /g, '\u00a0')).join(', '), 420, 10).slice(0, 2).forEach((ln, j) => text(ln, 480, y + 100 + j * 18, '#c0c8f0', 10));
       });
     } else {
       const keys = ownedItems();
@@ -338,10 +413,15 @@ export const Game = {
       keys.forEach((k, i) => { text(ITEMS[k].name, 80, 130 + i * 40, '#fff', 16); text('x' + G.inv[k], 460, 130 + i * 40, '#fff', 16, 'right'); if (m.focus === 'items' && i === m.idx && !m.sub) cursor(50, 132 + i * 40, G.t); });
       if (m.focus === 'items' && keys[m.idx]) text(ITEMS[keys[m.idx]].desc, 60, 580, '#c0c8f0', 12);
       if (!m.focus) text('Press Z to use an item.', 60, 580, '#a0a8d0', 12);
-      if (m.sub) {
-        uiWindow(520, 120, 400, 60 + G.party.length * 50);
-        const sub = m.sub; G.party.forEach((h, i) => { const st = heroStats(h); text(`${HEROES[h.id].name}  ${h.hp}/${st.maxhp}`, 580, 145 + i * 50, h.hp <= 0 ? '#ff6060' : '#fff', 14); if (i === sub.who || ITEMS[sub.item].all) cursor(545, 146 + i * 50, G.t); });
-      }
+      // party HP/MP stays beside the list, so you can see who needs a Tonic or Ether before picking one;
+      // once an item is chosen it becomes the target picker
+      uiWindow(520, 120, 400, 48 + G.party.length * 64);
+      const sub = m.sub; G.party.forEach((h, i) => {
+        const st = heroStats(h), y = 145 + i * 64;
+        text(HEROES[h.id].name, 580, y, h.hp <= 0 ? '#ff6060' : '#fff', 14);
+        text(`HP ${h.hp}/${st.maxhp}`, 580, y + 24, h.hp <= 0 ? '#ff6060' : '#fff', 12);
+        text(`MP ${h.mp}/${st.maxmp}`, 760, y + 24, '#a0d0ff', 12);
+        if (sub && (i === sub.who || ITEMS[sub.item].all)) cursor(545, y + 1, G.t); });
     }
     uiWindow(20, 630, 920, 70);
     text(`Gold: ${G.gold} G`, 50, 656, '#ffe050', 16);
@@ -371,5 +451,18 @@ export const Game = {
     const k = SHOP_STOCK[G.shopIdx];
     uiWindow(180, 120 + 80 + (SHOP_STOCK.length + 1) * 44 - 20, 600, 60);
     text(G.shopMsg || (k ? ITEMS[k].desc : 'Come again!'), 480, 120 + 80 + (SHOP_STOCK.length + 1) * 44, '#fff', 14, 'center');
+    // party status below, so you can see who needs HP or MP before buying Tonics or Ethers
+    const py = 120 + 80 + (SHOP_STOCK.length + 1) * 44 + 50;
+    this.drawPartyPanel(180, py, 600, 200, 410);
+  },
+  /** a window listing each member's name, HP (red when KO'd) and MP; hpX/mpX are column offsets from x */
+  drawPartyPanel(x: number, y0: number, w: number, hpX: number, mpX: number) {
+    uiWindow(x, y0, w, 40 + G.party.length * 36);
+    G.party.forEach((h, i) => {
+      const st = heroStats(h), y = y0 + 22 + i * 36, dead = h.hp <= 0;
+      text(HEROES[h.id].name, x + 30, y, dead ? '#ff6060' : '#fff', 14);
+      text(`HP ${h.hp}/${st.maxhp}`, x + hpX, y, dead ? '#ff6060' : '#fff', 14);
+      text(`MP ${h.mp}/${st.maxmp}`, x + mpX, y, '#a0d0ff', 14);
+    });
   },
 };

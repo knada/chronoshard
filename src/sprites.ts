@@ -1,5 +1,7 @@
-import { ctx } from './engine.js';
-import { PAL, flipCanvas, mkCanvas, outline, paintGrid, pixShadow, px, rotCanvas, shade, silhouette, tint, uiWindow } from './pixel.js';
+import { ctx, inWorld, snapPx } from './engine.js';
+import { Sheets } from './sheets.js';
+import type { Sheet } from './sheets.js';
+import { PAL, blit, flipCanvas, mkCanvas, outline, paintGrid, pixShadow, px, rotCanvas, shade, silhouette, tint, uiWindow } from './pixel.js';
 import { drawEnemy, enemyHeight } from './enemies.js';
 import { ENEMIES, LOOKS } from './data.js';
 import type { Dir, Look, Pose, View } from './types.js';
@@ -7,7 +9,8 @@ import type { Palette } from './pixel.js';
 
 type Pt = [number, number];
 /** options for drawHero: a battle pose, mirroring, a hit flash, knocked out, or no ground shadow */
-export interface HeroDrawOpts { pose?: Pose | null; flip?: boolean; flash?: boolean | number; down?: boolean; noShadow?: boolean }
+/** sheet: whose drawn sprite sheet to use (party or NPC id) when sheets are loaded; talk: mouth open (NPC sheets) */
+export interface HeroDrawOpts { pose?: Pose | null; flip?: boolean; flash?: boolean | number; down?: boolean; noShadow?: boolean; sheet?: string; talk?: boolean }
 
 // ===== Chronoshard hero/NPC sprites: generated 20x32 characters (two tiles tall) per look, view, pose and frame =====
 // Slots: s skin S skin-shade r mouth e eye | h hair H hair-shade L hair-light | t top T top-shade U top-light
@@ -209,15 +212,47 @@ export function heroSprite(look: Look, view: View, fi: number, pose: Pose | null
 
 // x,y = top-left of the 16x16 footprint tile (world px); feet land on row y+15. o: {pose, flip, flash, down}
 export function drawHero(x: number, y: number, look: Look, dir: Dir, frame: number, o: HeroDrawOpts = {}): void {
+  const sh = o.sheet ? Sheets.char(o.sheet) : undefined;
+  if (sh) { drawSheetChar(sh, x, y, dir, frame, o); return; }
   const pose = o.down ? 'ko' : o.pose || null;
   let view: View = dir === 'up' ? 'up' : dir === 'down' ? 'down' : 'side', flip = dir === 'left';
   if (pose) { view = pose === 'victory' ? 'down' : 'side'; flip = !!o.flip; }
   const fi = pose ? 0 : [0, 1, 0, 2][(((frame | 0) % 4) + 4) % 4];
-  x = Math.round(x); y = Math.round(y);
+  // in the world, snap to screen pixels (the camera does too, so nothing jitters against the ground)
+  if (inWorld()) { x = snapPx(x); y = snapPx(y); } else { x = Math.round(x); y = Math.round(y); }
   if (!o.noShadow) pixShadow(ctx, x + 8, y + 15, pose === 'ko' ? 22 : 14);
   const spr = heroSprite(look, view, fi, pose, flip, !!o.flash);
-  if (pose === 'ko') ctx.drawImage(spr, x + 8 - 24, y + 15 - 34);         // rotated: body lies across new rows 15..34
-  else ctx.drawImage(spr, x + 8 - (HB.OX + 10), y + 15 - (HB.OY + 31));
+  if (pose === 'ko') blit(spr, x + 8 - 24, y + 15 - 34, 35);     // rotated: body lies across new rows 15..34
+  else blit(spr, x + 8 - (HB.OX + 10), y + 15 - (HB.OY + 31), HB.OY + 32); // feet on row OY+31
+}
+
+/**
+ * A character from its drawn sheet. Party sheets start with front walk, back walk, and battle poses,
+ * followed by named side-walk rows. NPC sheets start with idle, walk, and talk, with side rows for wanderers.
+ * Feet land at (x + 8, y + 16).
+ */
+function drawSheetChar(sh: Sheet, x: number, y: number, dir: Dir, frame: number, o: HeroDrawOpts): void {
+  const pose = o.down ? 'ko' : o.pose || null, party = sh.names[6] === 'battle-ready', s = Sheets.charScale;
+  const step = [0, 1, 0, 2][(((frame | 0) % 4) + 4) % 4];
+  let i: number, flip = false;
+  if (pose && pose !== 'ko') {
+    i = !party ? 0 : pose === 'victory' ? 8 : pose === 'attack' ? 7 : pose === 'cast' ? (sh.id === 'lyra' ? 7 : 8) : 6;
+    flip = !!o.flip && party;
+  } else {
+    const sideFrame = (party || !o.talk) && (dir === 'left' || dir === 'right')
+      ? sh.names.indexOf(`${dir}-${['idle', 'step-a', 'step-b'][step]}`)
+      : -1;
+    if (sideFrame >= 0) i = sideFrame;
+    else if (party) { i = (dir === 'up' ? 3 : 0) + step; flip = dir === 'left'; }
+    else { i = o.talk ? 2 : step ? 1 : 0; flip = step === 2 || dir === 'left'; }
+  }
+  if (inWorld()) { x = snapPx(x); y = snapPx(y); } else { x = Math.round(x); y = Math.round(y); }
+  if (!o.noShadow) pixShadow(ctx, x + 8, y + 15, pose === 'ko' ? 22 : 14);
+  if (pose === 'ko' && !inWorld()) { // in menus a fallen hero stands faded (lying down they'd run across the text)
+    const f = sh.frames[0], a = ctx.globalAlpha; ctx.globalAlpha = a * 0.4; blit(f.c, x + 8 - f.px * s, y + 16 - f.py * s, f.py, s); ctx.globalAlpha = a; return;
+  }
+  const f = pose === 'ko' ? Sheets.variant(sh, 0, 'ko') : o.flash ? Sheets.variant(sh, i, flip ? 'flipflash' : 'flash') : flip ? Sheets.variant(sh, i, 'flip') : sh.frames[i];
+  blit(f.c, x + 8 - f.px * s, y + 16 - f.py * s, f.py, s);
 }
 
 // ---------- dialogue portraits ----------
@@ -230,6 +265,14 @@ export function drawPortrait(name: string, x: number, y: number, t: number): boo
     g.fillStyle = PAL.void; g.fillRect(x + 9, y + 9, 114, 114);
     g.save(); g.translate(x + 66, y + 4); g.scale(3, 3); drawEnemy(ENEMIES.hollow, -8, enemyHeight(ENEMIES.hollow) - 13, t || 0, { noShadow: true }); g.restore();
     g.restore(); return true;
+  }
+  const sh = Sheets.speaker(name);
+  if (sh) { // head and shoulders from the standing frame of the drawn sheet
+    uiWindow(x, y, 132, 132); px(g, x + 9, y + 9, 114, 114, '#1c2860');
+    const f = sh.frames[0], c = f.c, side = Math.min(c.width, (f.py - f.top) * 0.46);
+    g.save(); g.beginPath(); g.rect(x + 9, y + 9, 114, 114); g.clip(); g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high';
+    g.drawImage(c, (c.width - side) / 2, f.top, side, side, x + 9, y + 11, 114, 114); g.imageSmoothingEnabled = false; g.restore();
+    return true;
   }
   if (!id || !LOOKS[id]) return false;
   uiWindow(x, y, 132, 132);

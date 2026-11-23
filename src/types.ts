@@ -73,7 +73,7 @@ export type ScriptCmd =
   | ['battle', BattleEnemySpec[], { noRun?: boolean; boss?: boolean }?]
   | ['warp', string, number, number]
   | ['sfx', string]
-  | ['heal'] | ['shop'] | ['push'] | ['ending']
+  | ['heal'] | ['status'] | ['shop'] | ['push'] | ['ending']
   | ['wait', number]
   | ['shake', number];
 export type Script = ScriptCmd[];
@@ -82,7 +82,8 @@ export type Script = ScriptCmd[];
 export interface Track { tempo: number; lead: number[]; bass: number[]; wave?: OscillatorType; len?: number }
 
 // ---------- lighting ----------
-export interface Light { x: number; y: number; r: number; c: RGB; i: number; flicker?: boolean; pulse?: boolean }
+/** a point light in map coordinates; h is its height above the ground in 3D (art px) */
+export interface Light { x: number; y: number; r: number; c: RGB; i: number; flicker?: boolean; pulse?: boolean; h?: number }
 
 /** something that can be depth-sorted and drawn in the world */
 export interface Drawable { y: number; draw: () => void }

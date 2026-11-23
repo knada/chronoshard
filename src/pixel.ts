@@ -1,5 +1,7 @@
-import { ctx } from './engine.js';
+import { Frame, ctx, inWorld } from './engine.js';
+import { Space } from './space.js';
 import type { RGB } from './types.js';
+import { normalPixels } from './normal-pixels.js';
 
 /** maps a grid character to a colour */
 export type Palette = Record<string, string>;
@@ -64,8 +66,90 @@ export function gridSprite(rows: readonly string[], pal: Palette, pad = 1): HTML
   const w = Math.max(...rows.map(r => r.length)), [c, g] = mkCanvas(w + pad * 2, rows.length + pad * 2);
   paintGrid(g, rows, pal, pad, pad); return outline(c);
 }
-// pixel-art drop shadow (flat, two-tone)
-export function pixShadow(g: Ctx, cx: number, by: number, w: number): void { g.fillStyle = 'rgba(20,12,28,0.32)'; g.fillRect(Math.round(cx - w / 2 + 1), Math.round(by - 1), Math.round(w - 2), 3); g.fillRect(Math.round(cx - w / 2), Math.round(by), Math.round(w), 1); }
+// contact shadow: in the world it goes to the lighting shader as a soft ellipse; elsewhere (UI) it stays pixel art
+export function pixShadow(g: Ctx, cx: number, by: number, w: number): void {
+  if (g === ctx && inWorld()) { const [x, z] = Space.map(cx, by - 0.5); Frame.shadows.push({ x, z, w }); return; }
+  pixShadowFlat(g, cx, by, w);
+}
+export function pixShadowFlat(g: Ctx, cx: number, by: number, w: number): void { g.fillStyle = 'rgba(20,12,28,0.32)'; g.fillRect(Math.round(cx - w / 2 + 1), Math.round(by - 1), Math.round(w - 2), 3); g.fillRect(Math.round(cx - w / 2), Math.round(by), Math.round(w), 1); }
+
+// ---------- normal maps: sprites catch light from the side it comes from ----------
+const NORMALS = new WeakMap<HTMLCanvasElement, HTMLCanvasElement>();
+/**
+ * a normal map for a sprite, generated once: the silhouette is bevelled (distance to the edge, rounded), with a
+ * little relief from each pixel's brightness, then turned into per-pixel normals. Alpha marks sprite pixels.
+ */
+export function normalOf(src: HTMLCanvasElement, radius = 3.5): HTMLCanvasElement {
+  const hit = NORMALS.get(src); if (hit) return hit;
+  const w = src.width, h = src.height, [c, g] = mkCanvas(w, h);
+  NORMALS.set(src, c);
+  if (!w || !h) return c;
+  const source = src.getContext('2d')!.getImageData(0, 0, w, h), out = g.createImageData(w, h);
+  normalPixels(source, out, radius);
+  g.putImageData(out, 0, 0);
+  return c;
+}
+
+let normalWorker: Worker | null | undefined;
+let nextNormalId = 0;
+const normalJobs = new Map<number, (image: ImageData | null) => void>();
+
+function getNormalWorker(): Worker | null {
+  if (normalWorker !== undefined) return normalWorker;
+  normalWorker = null;
+  if (typeof Worker === 'undefined' || typeof OffscreenCanvas === 'undefined' || typeof createImageBitmap === 'undefined') return null;
+  try {
+    const worker = new Worker(new URL('./normal.worker.ts', import.meta.url), { type: 'module' });
+    worker.onmessage = (event: MessageEvent<{ id: number; result: ImageData | null }>) => {
+      const { id, result } = event.data;
+      normalJobs.get(id)?.(result);
+      normalJobs.delete(id);
+    };
+    worker.onerror = () => {
+      normalWorker = null; worker.terminate();
+      for (const finish of normalJobs.values()) finish(null);
+      normalJobs.clear();
+    };
+    normalWorker = worker;
+  } catch { /* normalOf remains available for browsers without workers */ }
+  return normalWorker;
+}
+
+/** Prepares 3D sprite lighting without computing normals during the draw call. */
+export async function prepareNormal(src: HTMLCanvasElement, radius: number): Promise<HTMLCanvasElement> {
+  const worker = getNormalWorker();
+  if (worker) {
+    try {
+      const bitmap = await createImageBitmap(src);
+      const result = await new Promise<ImageData | null>(resolve => {
+        if (normalWorker !== worker) { bitmap.close(); resolve(null); return; }
+        const id = nextNormalId++;
+        normalJobs.set(id, resolve);
+        try { worker.postMessage({ id, bitmap, radius }, [bitmap]); }
+        catch { normalJobs.delete(id); bitmap.close(); resolve(null); }
+      });
+      if (result) {
+        const [canvas, ctx] = mkCanvas(result.width, result.height);
+        ctx.putImageData(result, 0, 0);
+        return canvas;
+      }
+    } catch { /* fall back to generating a normal outside the draw call */ }
+  }
+  await new Promise<void>(resolve => setTimeout(resolve, 0));
+  return normalOf(src, radius);
+}
+/**
+ * draws a sprite: in the world it becomes a 3D billboard standing where row `foot` of the image meets the ground;
+ * on the UI layer (menus, portraits, the ending) it's painted
+ */
+export function blit(img: HTMLCanvasElement, x: number, y: number, foot = img.height, scale = 1): void {
+  if (inWorld()) { const [mx, my] = Space.map(x, y); Frame.sprites.push({ img, x: mx, z: my + foot * scale, foot, scale }); return; }
+  if (scale !== 1) { // high-resolution sheet art, drawn smaller: smooth it rather than dropping pixels
+    const s = ctx.imageSmoothingEnabled; ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(img, x, y, img.width * scale, img.height * scale); ctx.imageSmoothingEnabled = s; return;
+  }
+  ctx.drawImage(img, x, y);
+}
 
 // ---------- bitmap font (5x7, columns LSB-top, ASCII 32..126 + extras) ----------
 export const FONT_HEX =
@@ -81,12 +165,21 @@ export const FONT_HEX =
   '7f08040478' + '00447d4000' + '2040443d00' + '007f102844' + '00417f4000' + '7c04180478' + '7c08040478' + '3844444438' +
   '7c14141408' + '081414187c' + '7c08040408' + '4854545420' + '043f444020' + '3c4040207c' + '1c2040201c' + '3c4030403c' +
   '4428102844' + '0c5050503c' + '4464544c44' + '0008364100' + '00007f0000' + '0041360800' + '0201020402';
-export const FONT_EXTRA: Record<string, number[]> = { '▼': [0x04, 0x0c, 0x1c, 0x0c, 0x04], '★': [0x24, 0x1c, 0x0e, 0x1c, 0x24], '·': [0, 0, 0x08, 0, 0], '▶': [0x3e, 0x1c, 0x08, 0, 0], '’': [0, 0x05, 0x03, 0, 0], '—': [8, 8, 8, 8, 8] };
-export const Font = { atlas: null as HTMLCanvasElement | null, idx: {} as Record<string, number>, tinted: new Map<string, HTMLCanvasElement>() };
+export const FONT_EXTRA: Record<string, number[]> = { '→': [0x08, 0x08, 0x2a, 0x1c, 0x08], '▼': [0x04, 0x0c, 0x1c, 0x0c, 0x04], '★': [0x24, 0x1c, 0x0e, 0x1c, 0x24], '·': [0, 0, 0x08, 0, 0], '▶': [0x3e, 0x1c, 0x08, 0, 0], '’': [0, 0x05, 0x03, 0, 0], '—': [8, 8, 8, 8, 8] };
+export const Font = {
+  atlas: null as HTMLCanvasElement | null, idx: {} as Record<string, number>, tinted: new Map<string, HTMLCanvasElement>(),
+  /** true: smooth high-resolution serif drawn at the UI layer's full resolution; false: the 5x7 bitmap font */
+  hd: true, family: '"Palatino", "Palatino Linotype", "Book Antiqua", "Iowan Old Style", Georgia, serif',
+};
+// the HD font is sized so its capitals match the bitmap glyphs' 7-pixel height at the same scale
+const hdPx = (size: number) => fontScale(size) * 10;
+const hdFont = (size: number) => `600 ${hdPx(size)}px ${Font.family}`;
+const MEASURE = document.createElement('canvas').getContext('2d')!, MCACHE = new Map<string, number>();
 (function buildFont() {
   const glyphs: number[][] = [];
   for (let i = 0; i < 95; i++) glyphs.push([0, 1, 2, 3, 4].map(k => parseInt(FONT_HEX.substr(i * 10 + k * 2, 2), 16)));
   for (let i = 0; i < 95; i++) Font.idx[String.fromCharCode(32 + i)] = i;
+  Font.idx['\u00a0'] = Font.idx[' ']; // non-breaking space: drawn as a space, but wrapText won't break on it
   for (const k in FONT_EXTRA) { Font.idx[k] = glyphs.length; glyphs.push(FONT_EXTRA[k]); }
   const [c, g] = mkCanvas(glyphs.length * 6, 8);
   g.fillStyle = '#fff';
@@ -99,7 +192,13 @@ export function fontAtlas(color: string): HTMLCanvasElement {
   return a;
 }
 export function fontScale(size: number): number { return size >= 44 ? 6 : size >= 34 ? 5 : size >= 24 ? 4 : size >= 18 ? 3 : 2; }
-export function measure(s: string, size = 16): number { const k = fontScale(size); return s.length * 6 * k - k; }
+export function measure(s: string, size = 16): number {
+  const k = fontScale(size);
+  if (!Font.hd) return s.length * 6 * k - k;
+  const key = k + '|' + s; let w = MCACHE.get(key);
+  if (w === undefined) { MEASURE.font = hdFont(size); w = Math.ceil(MEASURE.measureText(s).width); if (MCACHE.size > 4000) MCACHE.clear(); MCACHE.set(key, w); }
+  return w;
+}
 export function glyphRun(g: Ctx, s: string, x: number, y: number, k: number, atlas: HTMLCanvasElement): void {
   for (let i = 0; i < s.length; i++) {
     let gi = Font.idx[s[i]]; if (gi === undefined) gi = Font.idx['?'];
@@ -109,7 +208,16 @@ export function glyphRun(g: Ctx, s: string, x: number, y: number, k: number, atl
 export function text(s: string | number, x: number, y: number, color = '#fff', size = 16, align: 'left' | 'center' | 'right' = 'left'): void {
   s = String(s); const k = fontScale(size), w = measure(s, size);
   x = Math.round(align === 'center' ? x - w / 2 : align === 'right' ? x - w : x); y = Math.round(y);
-  const g = ctx; g.imageSmoothingEnabled = false;
+  const g = ctx;
+  if (Font.hd) {
+    // baseline sits where the bitmap glyphs' bottom row was; a soft drop shadow replaces the hard one
+    g.font = hdFont(size); g.textBaseline = 'alphabetic'; g.textAlign = 'left';
+    const by = y + 7 * k, a = g.globalAlpha;
+    g.fillStyle = 'rgba(8,4,20,0.85)'; g.fillText(s, x + k * 0.6, by + k * 0.6);
+    g.globalAlpha = a; g.fillStyle = color; g.fillText(s, x, by);
+    return;
+  }
+  g.imageSmoothingEnabled = false;
   glyphRun(g, s, x + k, y + k, k, fontAtlas('#0c0818'));
   glyphRun(g, s, x, y, k, fontAtlas(color));
 }
@@ -127,7 +235,8 @@ export function wrapText(s: string, maxW: number, size = 16): string[] {
 export const UI = { u: 3, light: '#e4e8ff', mid: '#7480c8', dark: '#2a2f6a', top: '#3a4ab0', bot: '#141a52' };
 export function uiWindow(x: number, y: number, w: number, h: number, alpha = 0.95): void {
   const g = ctx, u = UI.u; x = Math.round(x / u) * u; y = Math.round(y / u) * u; w = Math.round(w / u) * u; h = Math.round(h / u) * u;
-  g.globalAlpha = alpha * 0.5; px(g, x + u * 2, y + u * 2, w, h, '#05030c'); g.globalAlpha = alpha;
+  const a0 = g.globalAlpha; // respect a fade the caller has set
+  g.globalAlpha = a0 * alpha * 0.5; px(g, x + u * 2, y + u * 2, w, h, '#05030c'); g.globalAlpha = a0 * alpha;
   px(g, x + u, y, w - u * 2, h, PAL.ink); px(g, x, y + u, w, h - u * 2, PAL.ink);
   px(g, x + u * 2, y + u, w - u * 4, h - u * 2, UI.light); px(g, x + u, y + u * 2, w - u * 2, h - u * 4, UI.light);
   px(g, x + u * 2, y + u * 2, w - u * 4, h - u * 4, UI.mid);
@@ -137,7 +246,7 @@ export function uiWindow(x: number, y: number, w: number, h: number, alpha = 0.9
   px(g, ix, iy, iw, u, 'rgba(255,255,255,0.14)'); px(g, ix, iy + ih - u, iw, u, 'rgba(0,0,0,0.25)');
   // corner rivets
   for (const [cx, cy] of [[x + u * 2, y + u * 2], [x + w - u * 3, y + u * 2], [x + u * 2, y + h - u * 3], [x + w - u * 3, y + h - u * 3]]) px(g, cx, cy, u, u, PAL.gold);
-  g.globalAlpha = 1;
+  g.globalAlpha = a0;
 }
 export const CURSOR_GRID = ['ww.....', 'wwWW...', 'wwwwWW.', 'wwwwwwW', 'wwwwWW.', 'wwWW...', 'ww.....'];
 export let CURSOR_SPR: HTMLCanvasElement | null = null;
