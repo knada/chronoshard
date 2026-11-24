@@ -1,7 +1,7 @@
 // Battle rules: stats and levelling, the damage formula, winning and losing, and where the party lines up.
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { TILE } from '../src/engine.js';
-import { ENEMIES, HEROES, MAPS } from '../src/data.js';
+import { DUALS, ENEMIES, HEROES, MAPS } from '../src/data.js';
 import { Battle, heroStats, knownTechs, xpForLevel } from '../src/battle.js';
 import { G, Game, newHero } from '../src/game.js';
 import { inBounds, mapList, resetGame, walkable } from './helpers.js';
@@ -134,6 +134,25 @@ describe('winning and losing', () => {
   test('bosses and story fights cannot be run from', () => {
     expect(fight([{ k: 'gloop', x: 12, y: 6 }]).mainOptions()).toContain('Run');
     expect(fight([{ k: 'golem', x: 12, y: 6 }], { boss: true }).mainOptions()).not.toContain('Run');
+  });
+});
+
+describe('effects', () => {
+  test("a finisher's effect plays once, larger, over the middle of the enemies; others play on each target", () => {
+    const b = fight([{ k: 'gloop', x: 12, y: 5 }, { k: 'gloop', x: 13, y: 7 }, { k: 'gloop', x: 12, y: 9 }]);
+    b.actionFx = { name: 'fx', id: 'fx', frames: [], names: [], scale: 1 };
+    b.sheetFx = [];
+    b.playOver(b.enemies, 1.4, 3.2);
+    expect(b.sheetFx.length).toBe(1);
+    expect(b.sheetFx[0].size).toBe(3.2);
+    expect(b.sheetFx[0].x).toBeCloseTo(b.enemies.reduce((s, e) => s + b.center(e)[0], 0) / 3);
+    b.sheetFx = [];
+    for (const e of b.enemies) b.play(e);
+    expect(b.sheetFx.map(f => f.size ?? 1)).toEqual([1, 1, 1]);
+  });
+
+  test('Chrono Rend is the finisher drawn large', () => {
+    expect(DUALS.find(d => d.name === 'Chrono Rend')?.fxSize).toBeGreaterThanOrEqual(3);
   });
 });
 

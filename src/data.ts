@@ -47,7 +47,7 @@ export const DUALS: DualTech[] = [
   { name: 'Blazing Edge', who: ['kael', 'lyra'], mp: [4, 4], target: 'enemy', elem: 'fire', power: 4.5, magic: true, fx: 'fire' },
   { name: 'Gear Crusher', who: ['kael', 'bram'], mp: [4, 4], target: 'enemies', elem: 'phys', power: 2.4, fx: 'spin' },
   { name: 'Storm Engine', who: ['bram', 'lyra'], mp: [5, 5], target: 'enemies', elem: 'shock', power: 2.6, magic: true, fx: 'zap' },
-  { name: 'Chrono Rend', who: ['kael', 'bram', 'lyra'], mp: [8, 8, 8], target: 'enemies', elem: 'time', power: 4.2, magic: true, fx: 'time' },
+  { name: 'Chrono Rend', who: ['kael', 'bram', 'lyra'], mp: [8, 8, 8], target: 'enemies', elem: 'time', power: 4.2, magic: true, fx: 'time', fxSize: 3.2 },
 ];
 
 export const ITEMS: Record<ItemId, Item> = {

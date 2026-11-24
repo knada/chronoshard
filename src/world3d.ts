@@ -429,7 +429,7 @@ export const World3D = {
       let mat = this.effectMats.get(e.img);
       if (!mat) { mat = new THREE.MeshBasicMaterial({ map: tex(e.img, true, e.scale < 1), transparent: true, depthWrite: false, color: new THREE.Color(1.35, 1.35, 1.35), side: THREE.DoubleSide }); this.effectMats.set(e.img, mat); }
       if (e.dynamic) mat.map!.needsUpdate = true;
-      mat.opacity = e.alpha; m.material = mat;
+      mat.opacity = e.alpha; mat.depthTest = !e.overlay; m.material = mat; m.renderOrder = e.overlay ? 18 : 10;
       // the pivot sits at the effect's world position; drawn a few px toward the camera, over what it lands on
       const k = e.scale, x0 = e.x - e.px * k, top = e.y + Space.up(e.py * k), bot = top - Space.up(e.img.height * k);
       this.quad(m, x0, x0 + e.img.width * k, bot, top, e.z + 4);

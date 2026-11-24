@@ -24,6 +24,8 @@ export interface Tech {
   lv?: number; name: string; mp: number; target: TechTarget;
   elem?: Elem; power?: number; magic?: boolean; heal?: number; revive?: boolean;
   fx: 'slash' | 'spin' | 'fire' | 'ice' | 'zap' | 'shot' | 'heal' | 'time';
+  /** set for a finisher: its drawn effect plays once, this many times larger, over the middle of all its targets */
+  fxSize?: number;
 }
 export interface DualTech extends Omit<Tech, 'mp' | 'lv'> { who: HeroId[]; mp: number[]; dual?: true }
 export interface HeroDef {

@@ -67,7 +67,8 @@ export interface Grade { lift: RGB; gain: RGB; sat: number; con: number }
 /** a sprite standing upright: its left edge at map x, standing on ground line z; image row `foot` touches the ground */
 export interface Billboard { img: HTMLCanvasElement; x: number; z: number; foot: number; scale: number; glow?: number }
 /** a drawn effect animation whose pivot (px, py in the image) sits at a world position */
-export interface EffectSprite extends Vec3 { img: HTMLCanvasElement; px: number; py: number; scale: number; alpha: number; dynamic?: boolean }
+/** overlay: drawn over the scenery rather than hidden by it (effects too big to fit between the ground and the walls) */
+export interface EffectSprite extends Vec3 { img: HTMLCanvasElement; px: number; py: number; scale: number; alpha: number; dynamic?: boolean; overlay?: boolean }
 /** a soft additive glow centred at a world position (a wisp, the Hollow King, a rift) */
 export interface GlowSprite extends Vec3 { r: number; c: RGB; a: number }
 /** an ambient particle or spell debris at a world position; add = it glows (additive) */

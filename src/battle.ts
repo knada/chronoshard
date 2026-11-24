@@ -29,7 +29,8 @@ export interface ItemOption { k: ItemId; it: Item; n: number }
 export interface BattleMenu { actor: HeroActor; level: 'main' | 'tech' | 'item' | 'target'; idx: number; sub: number; scroll: number; pending?: PendingCmd; tIdx: number }
 export interface Particle { x: number; y: number; vx: number; vy: number; life: number; color: string; size: number; g?: number; glow?: boolean; delay?: number }
 /** a drawn effect playing: centred at x, y (2D placement) on an actor whose ground line is gz */
-export interface SheetFx { s: Sheet; x: number; y: number; gz: number; t: number; dur: number }
+/** size: how many times larger than usual it's drawn (big ones draw over the scenery) */
+export interface SheetFx { s: Sheet; x: number; y: number; gz: number; t: number; dur: number; size?: number }
 /** art pixels per pixel of the drawn effect art (a 384px frame is about 50 art px across); divided by a sheet's scale */
 const FX_SCALE = 0.13;
 /** a damage/heal number: x, y where it's drawn the 2D way; gz the ground line of the actor it belongs to (for 3D) */
@@ -330,6 +331,13 @@ export const Battle = {
     if (!s) return;
     const [x, y] = this.center(a); this.sheetFx.push({ s, x, y, gz: a.side === 'hero' ? a.y + 15 : a.y + 16, t: 0, dur });
   },
+  /** plays the current action's drawn effect once, `size` times larger, over the middle of a group of actors */
+  playOver(group: Actor[], dur: number, size: number): void {
+    const s = this.actionFx;
+    if (!s || !group.length) return;
+    const mid = (f: (a: Actor) => number) => group.reduce((sum, a) => sum + f(a), 0) / group.length;
+    this.sheetFx.push({ s, x: mid(a => this.center(a)[0]), y: mid(a => this.center(a)[1]), gz: mid(a => a.y + 16), t: 0, dur, size });
+  },
   /** which frame of an enemy's sheet to hold for a move: its own named frame if it has one, else wind-up or strike */
   enemyPose(e: EnemyActor, move: string, phase: 'windup' | 'strike'): number | undefined {
     const s = Sheets.enemyOf(e.k); if (!s) return undefined;
@@ -429,7 +437,8 @@ export const Battle = {
     if (!targets.length) targets = this.alive(this.enemies).slice(0, 1);
     if (!targets.length) { this.msg = null; return; }
     const fxDur: Record<string, number> = { slash: 0.45, shot: 0.4, spin: 0.45, fire: 0.6, ice: 0.6, zap: 0.5, time: 1.0 };
-    for (const t of targets) this.play(t, fxDur[tech.fx] ?? 0.5);
+    if (tech.fxSize) this.playOver(targets, (fxDur[tech.fx] ?? 0.5) * 1.4, tech.fxSize);
+    else for (const t of targets) this.play(t, fxDur[tech.fx] ?? 0.5);
     yield* this.techFx(tech, hero, act.actors, targets);
     // combined stats for duals
     const src: DamageSource = act.actors.length > 1
@@ -542,7 +551,7 @@ export const Battle = {
     // drawn effect animations: 4 frames (wind-up, build, impact, dissipate) over each effect's duration
     for (const e of this.sheetFx) {
       const p = e.t / e.dur * 4, i = Math.min(3, Math.floor(p)), f = e.s.frames[i], alpha = i === 3 ? Math.max(0, 1 - (p - 3)) : 1;
-      Frame.effects.push({ img: f.c, ...Space.onObject(e.x, e.y, e.gz), px: f.px, py: f.py, scale: FX_SCALE / e.s.scale, alpha });
+      Frame.effects.push({ img: f.c, ...Space.onObject(e.x, e.y, e.gz), px: f.px, py: f.py, scale: FX_SCALE / e.s.scale * (e.size ?? 1), alpha, overlay: (e.size ?? 1) > 1.5 });
     }
     const L = this.lights.map(l => ({ x: l.x, y: l.y, r: l.r, c: l.c, i: l.i * Math.min(1, l.life / l.max * 1.5) }));
     for (const a of this.heroes) L.push({ x: a.x + 8, y: a.y + 6, r: 40, c: [255, 236, 210], i: 0.22 });
