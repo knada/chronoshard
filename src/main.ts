@@ -43,19 +43,22 @@ export function updateTitle() {
   }
 }
 export function drawTitle() {
-  const t = G.t; drawStars(t * 0.3);
-  drawClock(480, 250, 150, t);
-  ctx.globalAlpha = 0.35; ctx.fillStyle = '#c080ff'; ctx.beginPath(); ctx.ellipse(480, 250, 40 + Math.sin(t * 2) * 6, 70, 0, 0, 7); ctx.fill(); ctx.globalAlpha = 1;
+  const t = G.t;
+  if (!World3D.titleArtReady) {
+    drawStars(t * 0.3);
+    drawClock(480, 250, 150, t);
+    ctx.globalAlpha = 0.35; ctx.fillStyle = '#c080ff'; ctx.beginPath(); ctx.ellipse(480, 250, 40 + Math.sin(t * 2) * 6, 70, 0, 0, 7); ctx.fill(); ctx.globalAlpha = 1;
+  }
   text('CHRONOSHARD', 480, 430, '#ffe8a0', 48, 'center');
-  text('Thirteen Chimes', 480, 495, '#c0a8ff', 16, 'center');
+  text('Thirteen Chimes', 480, 495, '#d2b9f8', 16, 'center');
   const opts = Game.hasSave() ? ['New Game', 'Continue'] : ['New Game'];
-  opts.forEach((s, i) => text(s, 480, 560 + i * 40, i === Title.idx ? '#fff' : '#8a8ab0', 18, 'center'));
+  opts.forEach((s, i) => text(s, 480, 560 + i * 40, i === Title.idx ? '#fff' : '#b5accf', 18, 'center'));
   cursor(360, 562 + Title.idx * 40, t);
   // the save's party stays in view; dimmed unless Continue (which loads it) is selected
   if (opts.includes('Continue')) { ctx.globalAlpha = opts[Title.idx] === 'Continue' ? 1 : 0.55; drawSaveSummary(); ctx.globalAlpha = 1; }
   const L = (a: Action) => Input.label(a);
   text(Input.device === 'pad' ? `D-pad/stick move · ${L('ok')} confirm · ${L('back')} back · ${L('menu')} menu` : 'Arrows/WASD move · Z/Enter confirm · X/Esc back · C menu',
-    480, 690, '#6a6a90', 10, 'center');
+    480, 690, '#aaa9cd', 10, 'center');
 }
 
 /** what Continue will load: where, gold, and each hero's level, HP and MP */
@@ -148,7 +151,7 @@ export function loop(now: number): void {
     Game.drawDialog();
   }
   if (G.fade > 0) fillScreen(`rgba(0,0,0,${G.fade})`);
-  World3D.render();
+  World3D.render(G.mode === 'title');
   Input.clear();
   requestAnimationFrame(loop);
 }

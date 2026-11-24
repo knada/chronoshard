@@ -17,6 +17,7 @@ import { Dio } from './diorama.js';
 import { Space } from './space.js';
 import { prepareNormal } from './pixel.js';
 import type { MapDef, RGB } from './types.js';
+import titleArtUrl from './assets/title-clocktower.webp';
 
 /** light shafts: where each lands relative to the view's centre (art px) and how wide it is; and how long they are */
 const SHAFTS: [number, number, number][] = [[-170, -40, 22], [-70, 10, 30], [40, -70, 18], [140, 20, 26], [215, -30, 20]], SHAFT_LEN = 300;
@@ -149,16 +150,20 @@ class DofPass extends Pass {
 }
 /** the colour grade (per era), vignette and dither on the world, then the UI layer laid over everything */
 class FinalPass extends Pass {
-  quad: FullScreenQuad; mat: THREE.ShaderMaterial; ui: THREE.CanvasTexture;
+  quad: FullScreenQuad; mat: THREE.ShaderMaterial; ui: THREE.CanvasTexture; titleArt: THREE.Texture;
   constructor() {
     super();
     this.ui = new THREE.CanvasTexture(uiCanvas); this.ui.colorSpace = THREE.NoColorSpace; this.ui.minFilter = this.ui.magFilter = THREE.LinearFilter; this.ui.generateMipmaps = false;
+    this.titleArt = new THREE.TextureLoader().load(titleArtUrl);
+    this.titleArt.minFilter = this.titleArt.magFilter = THREE.LinearFilter;
+    this.titleArt.generateMipmaps = false;
     this.mat = new THREE.ShaderMaterial({
-      uniforms: { tDiffuse: { value: null }, tUI: { value: this.ui }, uWorld: { value: 0 }, uLift: { value: new THREE.Vector3() }, uGain: { value: new THREE.Vector3(1, 1, 1) },
+      uniforms: { tDiffuse: { value: null }, tUI: { value: this.ui }, tTitle: { value: this.titleArt }, uTitle: { value: 0 },
+        uWorld: { value: 0 }, uLift: { value: new THREE.Vector3() }, uGain: { value: new THREE.Vector3(1, 1, 1) },
         uSat: { value: 1 }, uCon: { value: 1 }, uVig: { value: 0.42 }, uT: { value: 0 } },
       vertexShader: 'varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
       fragmentShader: `
-        uniform sampler2D tDiffuse, tUI; uniform float uWorld, uSat, uCon, uVig, uT; uniform vec3 uLift, uGain; varying vec2 vUv;
+        uniform sampler2D tDiffuse, tUI, tTitle; uniform float uWorld, uTitle, uSat, uCon, uVig, uT; uniform vec3 uLift, uGain; varying vec2 vUv;
         float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
         vec3 softClip(vec3 c) { vec3 t = vec3(0.78); vec3 o = max(c - t, 0.0); return min(c, t) + (1.0 - t) * (1.0 - exp(-o / (1.0 - t))); }
         void main() {
@@ -170,6 +175,9 @@ class FinalPass extends Pass {
             c = (c - 0.5) * uCon + 0.5; c = softClip(max(c, 0.0));
             c *= 1.0 - smoothstep(0.38, 0.82, length((vUv - 0.5) * vec2(1.0, 0.9))) * uVig;
             c += (hash(gl_FragCoord.xy + fract(uT) * 91.0) - 0.5) / 255.0;
+          } else if (uTitle > 0.5) {
+            // Keep the title, menu, and control hints over the quietest tones.
+            c = texture2D(tTitle, vUv).rgb * mix(0.72, 1.0, smoothstep(0.0, 0.54, vUv.y));
           }
           vec4 ui = texture2D(tUI, vUv);
           gl_FragColor = vec4(c * (1.0 - ui.a) + ui.rgb * ui.a, 1.0);
@@ -368,13 +376,16 @@ export const World3D = {
     // no bounding sphere: pooled quads are never frustum-culled or ray-picked, so it would be wasted work
   },
 
-  /** draws a frame: the 3D world (when the game drew one) under the UI */
-  render(): void {
+  get titleArtReady(): boolean { return Boolean(this.passes.final?.titleArt.image); },
+
+  /** Draws the current background beneath the UI. */
+  render(title = false): void {
     if (!this.ok) return;
     this.resize();
     const F = Frame, P = this.passes, world = F.world && !!F.map;
     P.render.enabled = P.dof.enabled = P.bloom.enabled = P.output.enabled = world;
     const fu = P.final.mat.uniforms; fu.uWorld.value = world ? 1 : 0; fu.uT.value = F.t;
+    fu.uTitle.value = title && this.titleArtReady ? 1 : 0;
     if (world) {
       this.updateScene();
       const G = F.grade; fu.uLift.value.set(...G.lift); fu.uGain.value.set(...G.gain); fu.uSat.value = G.sat; fu.uCon.value = G.con;
