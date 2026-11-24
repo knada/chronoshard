@@ -40,6 +40,14 @@ export function storyScripts(flags: string[] = allFlags()): { from: string; scri
   return out;
 }
 
+/** where the player first sets foot on a map: the new-game start in town, else the landing of a warp or rift into it */
+export function arrival(m: MapDef): [number, number] {
+  if (m.id === 'town') return [2, 4];
+  const w = mapList.flatMap(o => [...(o.warps ?? []), ...(o.rifts ?? [])]).find(w => w.to === m.id);
+  if (!w) throw new Error(`nothing leads to ${m.id}`);
+  return [w.tx, w.ty];
+}
+
 /** tiles reachable on foot from (x, y), 4-way, through walkable tiles */
 export function reachable(m: MapDef, x: number, y: number): Set<string> {
   const seen = new Set<string>(), queue: [number, number][] = [[x, y]];

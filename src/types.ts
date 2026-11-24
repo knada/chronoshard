@@ -41,11 +41,21 @@ export type Inventory = Partial<Record<ItemId, number>>;
 
 // ---------- enemies ----------
 export type EnemyShape = 'blob' | 'emberblob' | 'plant' | 'bat' | 'robot' | 'sentinel' | 'golem' | 'hollow' | 'wisp' | 'voidwisp';
-export interface EnemyMove { name: string; power?: number; target?: 'one' | 'all'; elem?: Elem; magic?: boolean; heal?: number }
+/**
+ * art borrowed from another sprite sheet, recoloured: `from` names the drawn sheet; the hue turns by `hue` degrees,
+ * or with `colorize` every pixel takes that one hue (degrees), like a sepia tone, which also colours greys; saturation
+ * and lightness are then scaled by `sat` and `light`. New creatures and moves are drawn this way until they get sheets
+ * of their own (a sheet named after them in the manifest takes over).
+ */
+export interface Recolor { from: string; hue?: number; colorize?: number; sat?: number; light?: number }
+/** art: the effect sheet to play, when the move has no sheet of its own name */
+export interface EnemyMove { name: string; power?: number; target?: 'one' | 'all'; elem?: Elem; magic?: boolean; heal?: number; art?: Recolor }
 export interface EnemyKind {
   name: string; shape: EnemyShape; color: string; color2: string; size: number;
   hp: number; atk: number; def: number; mag: number; spd: number; xp: number; gold: number;
   weak?: Elem[]; resist?: Elem[]; boss?: boolean; moves: EnemyMove[];
+  /** art: the sheet to draw it with, when it has no sheet of its own name */
+  art?: Recolor;
 }
 
 // ---------- maps ----------
@@ -75,7 +85,8 @@ export type ScriptCmd =
   | ['sfx', string]
   | ['heal'] | ['status'] | ['shop'] | ['push'] | ['ending']
   | ['wait', number]
-  | ['shake', number];
+  | ['shake', number]
+  | ['give', ItemId, number];
 export type Script = ScriptCmd[];
 
 // ---------- audio ----------

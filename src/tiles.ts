@@ -3,7 +3,7 @@ import { PAL, mkCanvas, px, shade, speckle, tint } from './pixel.js';
 import type { Light, MapDef } from './types.js';
 import type { Ctx } from './pixel.js';
 
-export type GroundType = 'grass' | 'forest' | 'path' | 'flag' | 'metal' | 'void' | 'wood';
+export type GroundType = 'grass' | 'forest' | 'path' | 'flag' | 'metal' | 'void' | 'wood' | 'snow' | 'ice';
 export type Side = 'top' | 'bottom' | 'left' | 'right';
 /** a tile animated every frame on top of the pre-rendered base */
 export type AnimTile = { type: 'water' | 'panel'; x: number; y: number } | { type: 'blink'; x: number; y: number; ph: number; c: string };
@@ -13,15 +13,22 @@ export interface MapLayers { base: HTMLCanvasElement; over: HTMLCanvasElement; a
 
 // ===== Chronoshard map renderer: autotiled, pre-rendered base + overlay layers, animated tiles, light sources =====
 export const TILES: Record<string, { solid: boolean }> = {};
-for (const ch of '.,v=sBFMGK') TILES[ch] = { solid: false };
+for (const ch of '.,v=sBFMGKnI') TILES[ch] = { solid: false };
 for (const ch of '#~WRHDrfLXPk') TILES[ch] = { solid: true };
 export function tileAt(map: MapDef, x: number, y: number): string | null { if (x < 0 || y < 0 || x >= map.w || y >= map.h) return null; return map.rows[y][x]; }
 export function isSolidTile(ch: string | null | undefined): boolean { const t = ch == null ? undefined : TILES[ch]; return !t || t.solid; }
 
-export const GROUND: Record<string, GroundType> = { '.': 'grass', ',': 'grass', v: 'forest', '=': 'path', s: 'flag', M: 'metal', G: 'metal', K: 'void', F: 'wood', B: 'path' };
+export const GROUND: Record<string, GroundType> = { '.': 'grass', ',': 'grass', v: 'forest', '=': 'path', s: 'flag', M: 'metal', G: 'metal', K: 'void', F: 'wood', B: 'path', n: 'snow', I: 'ice' };
 export const TALL = new Set<string | null>(['W', 'H', 'R', 'D', 'P', 'k', 'L']);
-export const GRASSY = new Set<string>(['grass', 'forest']);
-export const GCOL: Record<GroundType, string> = { grass: PAL.grass, forest: PAL.forest, path: PAL.sand, flag: PAL.rock, metal: PAL.concrete, void: '#1a1028', wood: PAL.tan };
+export const GRASSY = new Set<string>(['grass', 'forest', 'snow']);
+export const GCOL: Record<GroundType, string> = { grass: PAL.grass, forest: PAL.forest, path: PAL.sand, flag: PAL.rock, metal: PAL.concrete, void: '#1a1028', wood: PAL.tan, snow: '#e6ecf6', ice: '#a8d0ea' };
+/** the ground a map is mostly made of, under its trees and walls */
+export function defaultGround(map: MapDef): GroundType {
+  const flat = map.rows.join('');
+  return flat.includes('K') ? 'void' : flat.includes('M') ? 'metal' : flat.includes('n') ? 'snow' : flat.includes('v') ? 'forest' : 'grass';
+}
+/** a snowbound map: snow-laden trees and rocks */
+export const isSnowy = (map: MapDef) => map.rows.some(r => r.includes('n'));
 
 export function pcircle(g: Ctx, cx: number, cy: number, r: number, col: string): void { g.fillStyle = col; for (let dy = -r; dy <= r; dy++) { const w = Math.floor(Math.sqrt(r * r - dy * dy) + 0.35); g.fillRect(cx - w, cy + dy, w * 2 + 1, 1); } }
 export function pring(g: Ctx, cx: number, cy: number, r: number, col: string): void { g.fillStyle = col; for (let a = 0; a < 6.283; a += 0.5 / r) g.fillRect(Math.round(cx + Math.cos(a) * r), Math.round(cy + Math.sin(a) * r), 1, 1); }
@@ -55,6 +62,18 @@ export function paintGround(g: Ctx, type: GroundType, X: number, Y: number, r: (
     case 'void': px(g, X, Y, 16, 16, '#1a1028'); px(g, X, Y, 16, 1, '#221636'); px(g, X, Y, 1, 16, '#221636');
       speckle(g, r, 6, ['#2c2044', '#3a2860'], X, Y); if (r() < 0.2) px(g, X + ((r() * 14) | 0), Y + ((r() * 14) | 0), 1, 1, PAL.lilac); break;
     case 'wood': px(g, X, Y, 16, 16, PAL.tan); for (let y = 3; y < 16; y += 4) px(g, X, Y + y, 16, 1, PAL.wood); break;
+    case 'snow': { // drifts: soft blue hollows and bright crests
+      px(g, X, Y, 16, 16, '#e6ecf6'); speckle(g, r, 10, ['#d2dcec', '#f6f9ff'], X, Y);
+      for (let i = 0; i < 3; i++) { const x = X + 1 + ((r() * 11) | 0), y = Y + 2 + ((r() * 12) | 0); px(g, x, y, 4, 1, '#c4d2e8'); px(g, x + 1, y - 1, 3, 1, '#ffffff'); }
+      if (r() < 0.25) px(g, X + ((r() * 14) | 0), Y + ((r() * 14) | 0), 1, 1, '#9ab0d0');
+      break;
+    }
+    case 'ice': { // a frozen lake: clear blue with white streaks and the odd crack
+      px(g, X, Y, 16, 16, '#a8d0ea'); speckle(g, r, 5, ['#98c4e2', '#bcdcf0'], X, Y);
+      for (let i = 0; i < 2; i++) { const x = X + ((r() * 10) | 0), y = Y + 2 + ((r() * 12) | 0); px(g, x, y, 5, 1, '#e4f2fc'); px(g, x + 2, y + 1, 3, 1, '#d0e8f8'); }
+      if (r() < 0.3) { let x = X + 3 + ((r() * 8) | 0), y = Y + 3; for (let i = 0; i < 7; i++) { px(g, x, y, 1, 1, '#7aa8cc'); y++; x += r() < 0.5 ? 1 : -1; } }
+      break;
+    }
   }
 }
 export function grassEdge(g: Ctx, X: number, Y: number, side: Side, type: GroundType, r: () => number): void {
@@ -66,6 +85,22 @@ export function grassEdge(g: Ctx, X: number, Y: number, side: Side, type: Ground
     if (side === 'left') { px(g, X, Y + i, d, 1, col); px(g, X + d, Y + i, 1, 1, dk); }
     if (side === 'right') { px(g, X + 16 - d, Y + i, d, 1, col); px(g, X + 15 - d, Y + i, 1, 1, dk); }
   }
+}
+
+/** a snow-laden pine: dark tiers, each with a white crest (overlay layer, trunk on the ground layer) */
+export function paintPine(o: Ctx, X: number, Y: number, r: () => number): void {
+  px(o, X + 7, Y + 8, 2, 6, PAL.bark);
+  for (const [w, y] of [[13, 7], [11, 3], [8, -1], [5, -4]] as [number, number][]) {
+    const x = X + 8 - (w >> 1);
+    px(o, x, Y + y, w, 4, '#1c3a34'); px(o, x + 1, Y + y, w - 2, 1, '#2c5248');
+    px(o, x + 1, Y + y - 1, w - 2, 2, '#eef4fc'); px(o, x + 2, Y + y - 1, (w >> 1) - 1, 1, '#ffffff'); // snow lying on the tier
+  }
+  px(o, X + 7, Y - 6, 2, 2, '#ffffff');
+  if (r() < 0.5) px(o, X + 3 + ((r() * 9) | 0), Y + 9, 2, 1, '#d8e4f4');
+}
+/** snow resting on a rock's crown */
+export function snowCap(g: Ctx, X: number, Y: number): void {
+  px(g, X + 3, Y + 4, 9, 2, '#eef4fc'); px(g, X + 4, Y + 3, 6, 1, '#ffffff'); px(g, X + 2, Y + 6, 3, 1, '#d8e4f4');
 }
 
 // ---------- map build ----------
@@ -115,7 +150,7 @@ export function panelLights(anim: AnimTile[]): Light[] {
 }
 /** the ground a solid tile stands on: the most common walkable ground among its neighbours, else the map's default */
 export function groundUnderAt(map: MapDef, x: number, y: number): GroundType {
-  const flat = map.rows.join(''), defGround: GroundType = flat.includes('K') ? 'void' : flat.includes('M') ? 'metal' : flat.includes('v') ? 'forest' : 'grass';
+  const defGround = defaultGround(map);
   const n: Partial<Record<GroundType, number>> = {};
   for (const [dx, dy] of [[0, 1], [0, -1], [1, 0], [-1, 0]]) { const c = tileAt(map, x + dx, y + dy), gt = c == null ? undefined : GROUND[c]; if (gt && gt !== 'path' && gt !== 'flag') n[gt] = (n[gt] || 0) + 1; }
   let best: GroundType = defGround, bn = 0; for (const k of Object.keys(n) as GroundType[]) if (n[k]! > bn) { best = k; bn = n[k]!; }
@@ -137,8 +172,7 @@ export const MapRender = {
     const W2 = map.w * TILE, H2 = map.h * TILE, [base, g] = mkCanvas(W2, H2), [over, o] = mkCanvas(W2, H2);
     const at = (x: number, y: number) => tileAt(map, x, y), anim: AnimTile[] = [], lights: Light[] = [];
     const gnd = (c: string | null): GroundType | undefined => (c == null ? undefined : GROUND[c]);
-    const flat = map.rows.join('');
-    const defGround: GroundType = flat.includes('K') ? 'void' : flat.includes('M') ? 'metal' : flat.includes('v') ? 'forest' : 'grass';
+    const defGround = defaultGround(map), snowy = isSnowy(map);
     const past = map.era === 'Year 400';
     const groundUnder = (x: number, y: number): GroundType => {
       const n: Partial<Record<GroundType, number>> = {}; for (const [dx, dy] of [[0, 1], [0, -1], [1, 0], [-1, 0]]) { const gt = gnd(at(x + dx, y + dy)); if (gt && gt !== 'path' && gt !== 'flag') n[gt] = (n[gt] || 0) + 1; }
@@ -187,6 +221,7 @@ export const MapRender = {
           case '#': {
             px(g, X + 1, Y + 11, 14, 4, 'rgba(10,20,10,0.35)');
             px(g, X + 6, Y + 8, 4, 7, PAL.bark); px(g, X + 7, Y + 8, 1, 6, PAL.wood); px(g, X + 5, Y + 14, 6, 1, PAL.bark);
+            if (snowy) { paintPine(o, X, Y, r); break; }
             const cx = X + 8, cy = Y + 3, pastTree = map.era === 'Year 400';
             const c0 = pastTree ? '#123220' : PAL.deep, c1 = pastTree ? '#1e5230' : PAL.forest, c2 = pastTree ? '#2e7438' : PAL.leaf, c3 = pastTree ? PAL.leaf : PAL.grass;
             pcircle(o, cx, cy, 9, c0); pcircle(o, cx, cy - 1, 8, c1);
@@ -195,7 +230,8 @@ export const MapRender = {
             speckle(o, r, 5, [c0], cx - 2, cy + 2, 9, 5); speckle(o, r, 4, [c3], cx - 6, cy - 6, 8, 5);
             break;
           }
-          case 'r': px(g, X + 2, Y + 13, 13, 3, 'rgba(10,10,20,0.3)'); pcircle(g, X + 8, Y + 9, 7, '#2e2a3a'); pcircle(g, X + 8, Y + 9, 6, PAL.stone); pcircle(g, X + 7, Y + 8, 5, PAL.rock); pcircle(g, X + 5, Y + 6, 2, '#b8b6c4'); px(g, X + 9, Y + 11, 3, 1, PAL.stone); break;
+          case 'r': px(g, X + 2, Y + 13, 13, 3, 'rgba(10,10,20,0.3)'); pcircle(g, X + 8, Y + 9, 7, '#2e2a3a'); pcircle(g, X + 8, Y + 9, 6, PAL.stone); pcircle(g, X + 7, Y + 8, 5, PAL.rock); pcircle(g, X + 5, Y + 6, 2, '#b8b6c4'); px(g, X + 9, Y + 11, 3, 1, PAL.stone);
+            if (snowy) snowCap(g, X, Y); break;
           case 'W': {
             px(g, X, Y, 16, 16, PAL.stone);
             for (let row = 0; row < 4; row++) { const yy = Y + row * 4; px(g, X, yy + 3, 16, 1, '#4c4a58'); for (let xx = (row % 2 ? 4 : 0); xx < 16; xx += 8) { px(g, X + xx, yy, 1, 3, '#4c4a58'); px(g, X + xx + 1, yy, 3, 1, '#8e8c9c'); } }

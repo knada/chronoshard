@@ -2,6 +2,7 @@
 import { afterEach, describe, expect, test } from 'vitest';
 import { normalPixels } from '../src/normal-pixels.js';
 import { Font, measure, wrapText } from '../src/pixel.js';
+import { recolorPixels } from '../src/sheets.js';
 
 describe('normal maps', () => {
   const image = (w: number, h: number) => ({ width: w, height: h, data: new Uint8ClampedArray(w * h * 4), colorSpace: 'srgb' }) as ImageData;
@@ -27,6 +28,32 @@ describe('normal maps', () => {
   });
 
   test('transparent pixels stay transparent', () => expect(disc()(0, 0)).toEqual([0, 0, 0, 0]));
+});
+
+describe('recolouring borrowed sprites', () => {
+  const px = (...rgba: number[]) => new Uint8ClampedArray(rgba);
+
+  test('turns the hue: a third of the way round makes red green', () => {
+    const d = px(255, 0, 0, 255); recolorPixels(d, { from: 'x', hue: 120 });
+    expect([...d]).toEqual([0, 255, 0, 255]);
+  });
+
+  test('scales saturation and lightness, and keeps alpha', () => {
+    const grey = px(200, 0, 0, 128); recolorPixels(grey, { from: 'x', sat: 0 });
+    expect(grey[0]).toBe(grey[1]); expect(grey[1]).toBe(grey[2]); expect(grey[3]).toBe(128);
+    const dark = px(200, 100, 50, 255); recolorPixels(dark, { from: 'x', light: 0.5 });
+    expect(Math.max(dark[0], dark[1], dark[2])).toBeLessThan(110);
+  });
+
+  test('colorize paints every pixel one hue, greys included', () => {
+    const d = px(128, 128, 128, 255, 0, 0, 255, 255); recolorPixels(d, { from: 'x', colorize: 120 });
+    for (const i of [0, 4]) { expect(d[i + 1], 'green leads').toBeGreaterThan(d[i]); expect(d[i + 1]).toBeGreaterThan(d[i + 2]); }
+  });
+
+  test('leaves transparent pixels alone, and no change is no change', () => {
+    const d = px(10, 20, 30, 0, 90, 160, 220, 255); recolorPixels(d, { from: 'x' });
+    expect([...d]).toEqual([10, 20, 30, 0, 90, 160, 220, 255]);
+  });
 });
 
 describe('text wrapping', () => {

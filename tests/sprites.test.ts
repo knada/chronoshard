@@ -53,15 +53,18 @@ describe('every drawn thing has a sheet', () => {
   const names = (c: string) => new Set(shipped.collections[c].map(e => e.name));
   const chars = new Set(shipped.collections.characters.flatMap(e => [e.gameId, e.name]));
 
-  test('enemies', () => {
+  // an enemy or move without a sheet of its own borrows (and recolours) the one its `art` names
+  const sheetFor = (name: string, art?: { from: string }) => (art && !names('enemies').has(name) && !names('effects').has(name) ? art.from : name);
+
+  test('enemies, drawn with their own sheet or a recoloured one', () => {
     const have = names('enemies');
-    expect(Object.values(ENEMIES).map(k => k.name).filter(n => !have.has(n))).toEqual([]);
+    expect(Object.values(ENEMIES).map(k => sheetFor(k.name, k.art)).filter(n => !have.has(n))).toEqual([]);
   });
 
   test('effects: attacks, running, techs, dual techs, enemy moves and items', () => {
     const have = names('effects');
     const used = ['Basic Attack', 'Run', ...Object.values(HEROES).flatMap(h => h.techs.map(t => t.name)), ...DUALS.map(d => d.name),
-      ...Object.values(ENEMIES).flatMap(k => k.moves.map(m => m.name)), ...Object.values(ITEMS).map(i => i.name)];
+      ...Object.values(ENEMIES).flatMap(k => k.moves.map(m => sheetFor(m.name, m.art))), ...Object.values(ITEMS).map(i => i.name)];
     expect([...new Set(used)].filter(n => !have.has(n))).toEqual([]);
   });
 

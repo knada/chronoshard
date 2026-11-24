@@ -8,7 +8,7 @@ import { TILE, rng } from './engine.js';
 import { HS, norm } from './camera.js';
 import type { V3 } from './camera.js';
 import { PAL, mkCanvas, normalOf, px, speckle } from './pixel.js';
-import { APRON, MapRender, apronMap, groundUnderAt, paintGround, pcircle, tileAt } from './tiles.js';
+import { APRON, MapRender, apronMap, groundUnderAt, isSnowy, paintGround, paintPine, pcircle, snowCap, tileAt } from './tiles.js';
 import type { MapDef } from './types.js';
 
 // ---------- the map as geometry ----------
@@ -50,7 +50,7 @@ export const Dio = {
   get(map: MapDef): Dio3D { return this.cache[map.id] || (this.cache[map.id] = this.build(map)); },
   build(map: MapDef): Dio3D {
     const R = MapRender.get(map), P = R.pad, A = APRON, M = apronMap(map), W2 = M.w * TILE, H2 = M.h * TILE;
-    const at = (tx: number, ty: number) => tileAt(M, tx, ty), past = map.era === 'Year 400';
+    const at = (tx: number, ty: number) => tileAt(M, tx, ty), past = map.era === 'Year 400', snowy = isSnowy(map);
     // ground: the base art with standing things (walls, roofs, trees, props) replaced by the ground they stand on
     const [ground, gg] = mkCanvas(W2, H2); gg.drawImage(R.base, 0, 0);
     const [groundMask, mg] = mkCanvas(W2, H2), [emis, eg] = mkCanvas(W2, H2);
@@ -146,8 +146,8 @@ export const Dio = {
     const cols = 8, [props, pg] = mkCanvas(cols * CELL_W, Math.ceil(cells.length / cols) * CELL_H);
     cells.forEach((name, i) => {
       const X = (i % cols) * CELL_W + OXC, Y = Math.floor(i / cols) * CELL_H + OYC, r = rng(9173 + i * 31);
-      if (name.startsWith('tree')) paintTree(pg, X, Y, r, past);
-      else if (name.startsWith('rock')) paintRock(pg, X, Y, r);
+      if (name.startsWith('tree')) { if (snowy) paintPine(pg, X, Y, r); else paintTree(pg, X, Y, r, past); }
+      else if (name.startsWith('rock')) { paintRock(pg, X, Y, r); if (snowy) snowCap(pg, X, Y); }
       else if (name.startsWith('fence')) paintFence(pg, X, Y, name[5] === '1', name[6] === '1');
       else paintLamp(pg, X, Y);
     });

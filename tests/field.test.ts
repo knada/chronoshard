@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, test } from 'vitest';
 import { Input, TILE } from '../src/engine.js';
 import { MAPS, TALK } from '../src/data.js';
 import { G, Game, SAVE_KEY } from '../src/game.js';
-import { mapList, reachable, resetGame, standOn, walkable } from './helpers.js';
+import { arrival, mapList, reachable, resetGame, standOn, walkable } from './helpers.js';
 import type { Dir, MapDef } from '../src/types.js';
 
 beforeEach(() => { resetGame(); Game.newGame(); G.script = null; });
@@ -31,7 +31,7 @@ describe('walking', () => {
 
   test.each(mapList.map(m => [m.id, m] as [string, MapDef]))('on %s, walls stop the player', (_id, m) => {
     // from where the player first arrives, walk each way for a while: their feet never end up in a wall
-    const [x, y] = m.id === 'town' ? [2, 4] : (() => { const w = mapList.flatMap(o => o.warps ?? []).find(w => w.to === m.id)!; return [w.tx, w.ty]; })();
+    const [x, y] = arrival(m);
     for (const dir of ['up', 'left', 'down', 'right'] as Dir[]) {
       Game.loadMap(m.id, x, y); G.foes = []; G.npcs = [];
       walk(dir, 3);
@@ -66,8 +66,7 @@ describe('warps', () => {
 describe('talking and looking', () => {
   /** stands the player on open, reachable ground next to (x, y), facing it */
   function faceTile(m: MapDef, x: number, y: number): boolean {
-    const arrival = m.id === 'town' ? [2, 4] : mapList.flatMap(o => o.warps ?? []).filter(w => w.to === m.id).map(w => [w.tx, w.ty])[0];
-    const open = reachable(m, arrival[0], arrival[1]);
+    const open = reachable(m, ...arrival(m));
     for (const [dx, dy, dir] of [[0, 1, 'up'], [0, -1, 'down'], [-1, 0, 'right'], [1, 0, 'left']] as [number, number, Dir][]) {
       if (!open.has(`${x + dx},${y + dy}`)) continue;
       G.player.x = (x + dx) * TILE; G.player.y = (y + dy) * TILE; G.player.dir = dir;

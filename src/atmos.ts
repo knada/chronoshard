@@ -8,7 +8,7 @@ import { Battle } from './battle.js';
 import { G } from './game.js';
 import type { EnemyKind, EnemyShape, Light, MapDef, RGB } from './types.js';
 
-export type ParticleKind = 'petals' | 'pollen' | 'fireflies' | 'ash' | 'motes';
+export type ParticleKind = 'petals' | 'pollen' | 'fireflies' | 'ash' | 'motes' | 'snow';
 /** a map's mood: ambient light colour, ambient particles, optional cloud shadows / light rays / a light around the party, and its colour grade */
 export interface EraFx { ambient: RGB; particles: ParticleKind; clouds?: boolean; rays?: boolean; party?: number; grade: Grade; fog: RGB; sun: number }
 /** one ambient particle in world space */
@@ -18,7 +18,7 @@ const EMIT: Partial<Record<EnemyShape, { dy: number; r: number; i: number; c?: s
   wisp: { dy: -10, r: 64, i: 1 }, voidwisp: { dy: -10, r: 64, i: 1 }, hollow: { dy: -16, r: 120, i: 0.9, c: '#b070ff' },
   sentinel: { dy: -13, r: 34, i: 0.6, c: '#6ae0ff' }, emberblob: { dy: -4, r: 30, i: 0.55, c: '#ff9040' },
 };
-const WANT: Record<ParticleKind, number> = { petals: 22, pollen: 18, fireflies: 26, ash: 50, motes: 40 };
+const WANT: Record<ParticleKind, number> = { petals: 22, pollen: 18, fireflies: 26, ash: 50, motes: 40, snow: 70 };
 
 // ===== Chronoshard atmosphere: per-era light map, bloom, particles, cloud shadows, light rays, vignette =====
 export const ERA_FX: Record<string, EraFx> = {
@@ -28,6 +28,12 @@ export const ERA_FX: Record<string, EraFx> = {
   village: { ambient: [232, 214, 176], particles: 'fireflies', rays: true, fog: [86, 78, 62], sun: 0.75, grade: { lift: [0.03, 0.02, 0.05], gain: [1.07, 0.99, 0.86], sat: 1.05, con: 1.06 } },
   ruins: { ambient: [112, 128, 160], particles: 'ash', party: 0.35, fog: [20, 24, 38], sun: 0.25, grade: { lift: [0.02, 0.03, 0.08], gain: [0.95, 1.0, 1.08], sat: 0.85, con: 1.1 } },
   core: { ambient: [84, 64, 124], particles: 'motes', party: 0.4, fog: [22, 12, 40], sun: 0.1, grade: { lift: [0.05, 0.0, 0.09], gain: [1.04, 0.95, 1.1], sat: 1.05, con: 1.1 } },
+  // Year 1600: a winter that never ends, under a pale sun
+  frostveil: { ambient: [226, 234, 255], particles: 'snow', clouds: true, fog: [196, 210, 234], sun: 0.8, grade: { lift: [0.03, 0.04, 0.08], gain: [0.97, 1.0, 1.07], sat: 0.9, con: 1.04 } },
+  // Year 1800: a clockwork town at dusk, lit by its gas lamps, soot drifting down
+  cogspire: { ambient: [170, 156, 196], particles: 'ash', party: 0.25, fog: [40, 34, 58], sun: 0.35, grade: { lift: [0.03, 0.02, 0.07], gain: [1.06, 0.99, 0.9], sat: 1.02, con: 1.07 } },
+  // the works beneath it: brass, steam and sparks
+  gearworks: { ambient: [176, 136, 96], particles: 'ash', party: 0.35, fog: [38, 26, 16], sun: 0.2, grade: { lift: [0.04, 0.02, 0.0], gain: [1.1, 0.99, 0.82], sat: 1.06, con: 1.1 } },
 };
 export const Atmos = {
   parts: [] as Mote[], mapId: null as string | null, t: 0,
@@ -46,6 +52,7 @@ export const Atmos = {
       else if (f.particles === 'fireflies') { p.x += Math.sin(p.ph * 0.8 + p.s) * 9 * dt; p.y += Math.cos(p.ph * 0.6 + p.s) * 7 * dt; }
       else if (f.particles === 'ash') { if (p.ember) { p.y -= 14 * dt; p.x += Math.sin(p.ph * 3) * 6 * dt; } else { p.y += 9 * dt; p.x += (4 + Math.sin(p.ph) * 4) * dt; } }
       else if (f.particles === 'motes') { p.y -= (8 + p.s * 6) * dt; p.x += Math.sin(p.ph * 1.5 + p.s) * 5 * dt; }
+      else if (f.particles === 'snow') { p.y += (10 + p.s * 2.5) * dt; p.x += (3 + Math.sin(p.ph * 1.2 + p.s) * 7) * dt; }
       const sx = p.x - cx, sy = p.y - cy;
       if (sx < -20 || sy < -20 || sx > vw + 20 || sy > vh + 20) p.life = 0;
     }
@@ -54,11 +61,11 @@ export const Atmos = {
   spawn(kind: ParticleKind, cx: number, cy: number, vw: number, vh: number, anywhere: boolean): Mote {
     const r = Math.random, p: Mote = { x: cx + r() * vw, y: cy + r() * vh, ph: r() * 10, s: r() * 6, life: 4 + r() * 6, c: '' };
     if (!anywhere) {
-      if (kind === 'petals') { if (r() < 0.5) { p.x = cx - 8; } else { p.y = cy - 8; } }
+      if (kind === 'petals' || kind === 'snow') { if (r() < 0.5) { p.x = cx - 8; } else { p.y = cy - 8; } }
       if (kind === 'ash') { p.ember = r() < 0.2; if (p.ember) p.y = cy + vh + 4; else p.y = cy - 6; }
       if (kind === 'motes') p.y = cy + vh + 4;
     } else if (kind === 'ash') p.ember = r() < 0.2;
-    p.c = kind === 'petals' ? (r() < 0.6 ? '#ffb4dc' : PAL.white) : kind === 'pollen' ? '#fff2a8' : kind === 'fireflies' ? '#d4ff6a' : kind === 'ash' ? (p.ember ? '#ff9a3a' : '#a0a0b0') : (r() < 0.5 ? PAL.lilac : '#ff8ae0');
+    p.c = kind === 'petals' ? (r() < 0.6 ? '#ffb4dc' : PAL.white) : kind === 'pollen' ? '#fff2a8' : kind === 'fireflies' ? '#d4ff6a' : kind === 'ash' ? (p.ember ? '#ff9a3a' : '#a0a0b0') : kind === 'snow' ? (r() < 0.7 ? '#ffffff' : '#dce8fa') : (r() < 0.5 ? PAL.lilac : '#ff8ae0');
     return p;
   },
   // extra: [{x,y,r,c,i}] world-space lights (party, spells).

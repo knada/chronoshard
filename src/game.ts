@@ -49,7 +49,8 @@ export const G: GameState = {
   script: null, onFade: null, banner: null,
   lastTile: { x: 0, y: 0 }, menu: { tab: 0, idx: 0, sub: null, msg: '' }, shopIdx: 0, shopMsg: '', riftFlash: 0, endT: 0,
 };
-export const BOSS_WIN: Record<string, string> = { boss1: 'golemWin', boss2: 'hollowWin' };
+/** the event that plays after beating each field boss */
+export const BOSS_WIN: Record<string, string> = { boss0: 'gloopKingWin', boss1: 'golemWin', boss3: 'colossusWin', boss4: 'tyrantWin', boss2: 'hollowWin' };
 export const CHEST_GRIDS = [['..dddddddddddd..', '.dwwwwwwwwwwwwd.', '.dwWWWWWWWWWWwd.', '.yyyyyyyyyyyyyy.', '.dwwwwwyywwwwwd.', '.dwwwwwYYwwwwwd.', '.dWWWWWWWWWWWWd.', '.dWWWWWWWWWWWWd.', '.yyyyyyyyyyyyyy.', '..dddddddddddd..'],
   ['..dddddddddddd..', '.dkkkkkkkkkkkkd.', '.dkkkgkkkkgkkkd.', '.yyyyyyyyyyyyyy.', '.dwwwwwyywwwwwd.', '.dwwwwwYYwwwwwd.', '.dWWWWWWWWWWWWd.', '.dWWWWWWWWWWWWd.', '.yyyyyyyyyyyyyy.', '..dddddddddddd..']];
 /** how wide the drawn treasure chest is, in art pixels (a tile is 16; a hero is about 36 tall) */
@@ -139,6 +140,7 @@ export const Game = {
       case 'heal': for (const h of G.party) { const st = heroStats(h); h.hp = st.maxhp; h.mp = st.maxmp; } Sound.sfx('heal'); break;
       case 'wait': s.wait = c[1]; s.i++; return;
       case 'shake': G.shake = c[1]; break;
+      case 'give': G.inv[c[1]] = (G.inv[c[1]] ?? 0) + c[2]; break;
       case 'push': { const d = ({ up: [0, 1], down: [0, -1], left: [1, 0], right: [-1, 0] } as Record<Dir, [number, number]>)[G.player.dir]; G.player.x += d[0] * 10; G.player.y += d[1] * 10; G.lastTile = this.ptile(); break; }
       case 'shop': s.block = true; s.i++; G.mode = 'shop'; G.shopIdx = 0; G.shopMsg = ''; return;
       case 'warp': s.block = true; s.i++; this.transition(() => { this.loadMap(c[1], c[2], c[3], 'right'); s.block = false; }); return;

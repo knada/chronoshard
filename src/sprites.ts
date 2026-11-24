@@ -256,7 +256,8 @@ function drawSheetChar(sh: Sheet, x: number, y: number, dir: Dir, frame: number,
 }
 
 // ---------- dialogue portraits ----------
-export const PORTRAIT_OF: Record<string, string> = { Kael: 'kael', Bram: 'bram', Lyra: 'lyra', Mom: 'mom', 'Elder Moira': 'elder', Innkeeper: 'inn', Hearthkeeper: 'inn', Watchman: 'villager', 'Old Fenn': 'villager', Woodcutter: 'villager', Kid: 'kid', Child: 'kid', 'Unit-7': 'unit7' };
+export const PORTRAIT_OF: Record<string, string> = { Kael: 'kael', Bram: 'bram', Lyra: 'lyra', Mom: 'mom', 'Elder Moira': 'elder', Innkeeper: 'inn', Hearthkeeper: 'inn', Watchman: 'villager', 'Old Fenn': 'villager', Woodcutter: 'villager', Kid: 'kid', Child: 'kid', 'Unit-7': 'unit7',
+  Hermit: 'villager', Pilgrim: 'monk', 'Clockmaker Tamsin': 'villager', Gatewarden: 'villager', 'Cogspire Kid': 'kid', Lamplighter: 'villager' };
 // draws a framed portrait at screen coords; returns true if one was drawn
 export function drawPortrait(name: string, x: number, y: number, t: number): boolean {
   const g = ctx, id = PORTRAIT_OF[name];

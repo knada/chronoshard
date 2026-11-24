@@ -77,7 +77,7 @@ export const Battle = {
     this.fx = []; this.pops = []; this.lights = []; this.sheetFx = []; this.hitStop = 0; this.dim = 0; this.dimT = 0; this.co = null; this.coWait = 0; this.queue = []; this.ready = []; this.menu = null; this.msg = null; this.flashT = 0; this.shakeT = 0;
     this.enemies = cfg.enemies.map((e): EnemyActor => {
       const k = ENEMIES[e.k];
-      for (const move of k.moves) Sheets.effect(move.name);
+      for (const move of k.moves) Sheets.moveEffect(move);
       return { side: 'enemy', k, name: k.name, hp: k.hp, maxhp: k.hp, x: e.x * TILE, y: e.y * TILE, hx: e.x * TILE, hy: e.y * TILE, atb: Math.random() * 40, dead: false, fade: 1, flash: 0 };
     });
     // fights near the bottom edge of a map lift up so nobody stands behind the command menu
@@ -332,7 +332,7 @@ export const Battle = {
   },
   /** which frame of an enemy's sheet to hold for a move: its own named frame if it has one, else wind-up or strike */
   enemyPose(e: EnemyActor, move: string, phase: 'windup' | 'strike'): number | undefined {
-    const s = Sheets.enemy(e.k.name); if (!s) return undefined;
+    const s = Sheets.enemyOf(e.k); if (!s) return undefined;
     const named = s.names.indexOf(move.toLowerCase().replace(/ /g, '-')); if (named >= 0) return named;
     const pick = (opts: string[]) => { for (const o of opts) { const i = s.names.indexOf(o); if (i >= 0) return i; } return undefined; };
     return phase === 'windup' ? pick(['windup', 'squash', 'cast', 'sway']) : pick(['strike', 'lunge', 'lash', 'flare', 'rend', 'cast']);
@@ -357,8 +357,8 @@ export const Battle = {
     a.moving = false;
   },
   *perform(act: Action): Anim {
-    const effect = act.type === 'enemy' ? act.move.name : heroEffectName(act);
-    this.actionFx = effect ? Sheets.effect(effect) : undefined;
+    const effect = act.type === 'enemy' ? undefined : heroEffectName(act);
+    this.actionFx = act.type === 'enemy' ? Sheets.moveEffect(act.move) : effect ? Sheets.effect(effect) : undefined;
     try { yield* this.performInner(act); }
     finally { this.actionFx = undefined; for (const p of act.actors) { p.pose = null; p.moving = false; } this.dimT = 0; }
   },
@@ -370,7 +370,7 @@ export const Battle = {
         if (!mv.magic && mv.target !== 'all') {
           const t = act.targets[0];
           // travel with the sheet's side-move frames when it has them, otherwise hold the wind-up
-          a.sheetPose = Sheets.enemy(a.k.name)?.names.includes('side-move-a') ? undefined : this.enemyPose(a, mv.name, 'windup');
+          a.sheetPose = Sheets.enemyOf(a.k)?.names.includes('side-move-a') ? undefined : this.enemyPose(a, mv.name, 'windup');
           yield* this.moveTo(a, t.x + 14, t.y, 0.18); Sound.sfx('hit');
           a.sheetPose = this.enemyPose(a, mv.name, 'strike'); this.play(t, 0.45);
           this.burst(...this.center(t), a.k.color2, 10);

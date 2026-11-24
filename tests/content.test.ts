@@ -87,6 +87,7 @@ describe('story scripts', () => {
     for (const { from, script } of scripts) {
       for (const c of script) {
         if (c[0] === 'join') expect(HEROES[c[1]], `${from}: join ${c[1]}`).toBeDefined();
+        if (c[0] === 'give') { expect(ITEMS[c[1]], `${from}: give ${c[1]}`).toBeDefined(); expect(c[2]).toBeGreaterThan(0); }
         if (c[0] === 'battle') for (const e of c[1]) expect(ENEMIES[e.k], `${from}: battle ${e.k}`).toBeDefined();
         if (c[0] === 'warp') {
           expect(MAPS[c[1]], `${from}: warp ${c[1]}`).toBeDefined();
@@ -106,6 +107,29 @@ describe('story scripts', () => {
 
   test('never show an empty line of dialogue', () => {
     for (const { from, script } of scripts) for (const c of script) if (c[0] === 'say') expect(c[2].trim(), from).not.toBe('');
+  });
+});
+
+describe('the road through time', () => {
+  /** the flag each boss's win event sets */
+  const opens = (event: string) => storyScripts().filter(s => s.from === `event ${event}`).flatMap(s => s.script).flatMap(c => (c[0] === 'flag' ? [c[1]] : []));
+
+  test('each story boss opens a rift onward, which leads to the next era', () => {
+    // the Golem opens the way to Frostveil, the Colossus to Cogspire, the Tyrant to the ruins of Ashvale
+    for (const [boss, to] of [['golemWin', 'frostveil'], ['colossusWin', 'cogspire'], ['tyrantWin', 'ruins']]) {
+      const flags = opens(boss), rifts = mapList.flatMap(m => m.rifts ?? []).filter(r => flags.includes(r.flag) && r.to === to);
+      expect(rifts.length, `${boss} opens a rift to ${to}`).toBeGreaterThan(0);
+    }
+  });
+
+  test('every boss is guarded by its flag, so it stays beaten', () => {
+    for (const m of mapList) for (const e of m.enemies ?? []) if (e.boss) expect(e.flag, `${m.id} ${e.id}`).toBeTruthy();
+  });
+
+  test('every rift has a way back the other way', () => {
+    for (const m of mapList) for (const r of m.rifts ?? []) {
+      expect(MAPS[r.to].rifts?.some(b => b.to === m.id && b.flag === r.flag), `${m.id} -> ${r.to} (${r.flag})`).toBe(true);
+    }
   });
 });
 

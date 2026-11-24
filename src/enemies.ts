@@ -422,7 +422,7 @@ export function drawEnemy(kind: EnemyKind, x: number, y: number, t: number, o: E
   }
   const flashing = o.flash && ((t * 30) | 0) % 2 === 0;
   if (spirit) g.globalAlpha *= 0.92;
-  const sh = Sheets.enemy(kind.name);
+  const sh = Sheets.enemyOf(kind);
   if (sh) {
     drawSheetEnemy(sh, kind, E.h, cx, by, bob, t, x, !!flashing, o); if (spirit) g.globalAlpha /= 0.92;
     if (spirit && inWorld() && Frame.sprites.length) Frame.sprites[Frame.sprites.length - 1].glow = 0.6; // spirits glow from within
